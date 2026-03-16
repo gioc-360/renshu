@@ -1,0 +1,3149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>練習 Renshū — Japanese Practice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Custom Properties ── Kenya Hara Design System ── */
+    :root {
+      --color-bg: #FFFFFF;
+      --color-surface: #FFFFFF;
+      --color-text: #1a1a1a;
+      --color-text-secondary: #767676;
+      --color-text-muted: #a0a0a0;
+      --color-accent: #1a1a1a;
+      --color-accent-light: #333333;
+      --color-vermillion: #C23B22;
+      --color-correct: #1a1a1a;
+      --color-incorrect: #767676;
+      --color-correct-light: transparent;
+      --color-incorrect-light: transparent;
+      --color-border: #e8e8e8;
+      --color-border-light: #f0f0f0;
+      --color-card-shadow: transparent;
+      --font-jp: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+      --font-en: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --radius-sm: 0px;
+      --radius-md: 0px;
+      --radius-lg: 0px;
+      --transition-fast: 0.4s ease-out;
+      --transition-med: 0.5s ease-out;
+    }
+
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: var(--font-en);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ───────────────────────────────────────── */
+    .app {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      opacity: 0;
+      transition: opacity var(--transition-med);
+    }
+
+    .view.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .view.fade-in {
+      animation: fadeIn var(--transition-med) forwards;
+    }
+
+    .view.fade-out {
+      animation: fadeOut 0.4s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* ── Typography ───────────────────────────────────── */
+    .jp {
+      font-family: var(--font-jp);
+    }
+
+    .text-jp-large {
+      font-family: var(--font-jp);
+      font-size: 2.5rem;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    .text-jp-medium {
+      font-family: var(--font-jp);
+      font-size: 1.5rem;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    .text-jp-body {
+      font-family: var(--font-jp);
+      font-size: 1.125rem;
+      line-height: 1.6;
+    }
+
+    /* ── Buttons ──────────────────────────────────────── */
+    button {
+      font-family: var(--font-en);
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: all var(--transition-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      transform: none;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      width: auto;
+      padding: 0.75rem 1.5rem;
+      font-size: 1.125rem;
+      font-weight: 400;
+      color: var(--color-text);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid currentColor;
+      border-radius: 0;
+      min-height: 44px;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.7;
+      background: transparent;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      width: auto;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid currentColor;
+      border-radius: 0;
+      min-height: 44px;
+    }
+
+    .btn-secondary:hover {
+      opacity: 0.7;
+      border-color: transparent;
+    }
+
+    .btn-small {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      background: transparent;
+      border-radius: 0;
+      min-height: 44px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .btn-small:hover {
+      color: var(--color-text-secondary);
+      background: transparent;
+      opacity: 0.7;
+    }
+
+    .btn-option {
+      display: block;
+      width: 100%;
+      padding: 1rem 0.75rem;
+      font-size: 1.125rem;
+      font-weight: 400;
+      text-align: left;
+      color: var(--color-text);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--color-border-light);
+      border-radius: 0;
+      min-height: 48px;
+      font-family: var(--font-jp);
+      transition: color var(--transition-fast);
+      pointer-events: auto;
+    }
+
+    .btn-option:hover:not(:disabled) {
+      color: var(--color-vermillion);
+      background: transparent;
+    }
+
+    .btn-option:disabled {
+      cursor: default;
+      transform: none;
+      pointer-events: none;
+    }
+
+    .btn-option.correct {
+      color: var(--color-text);
+      background: transparent;
+      border-bottom: 2px solid var(--color-text);
+      font-weight: 700;
+    }
+
+    .btn-option.incorrect {
+      color: var(--color-incorrect);
+      background: transparent;
+      border-bottom: 1px solid var(--color-border-light);
+      text-decoration: line-through;
+    }
+
+    .btn-option.reveal-correct {
+      color: var(--color-text);
+      background: transparent;
+      border-bottom: 2px solid var(--color-text);
+      font-weight: 700;
+    }
+
+    /* Fade non-selected options after answer */
+    .options-grid.answered .btn-option:not(.correct):not(.incorrect):not(.reveal-correct) {
+      opacity: 0.3;
+    }
+
+    /* ── Cards ────────────────────────────────────────── */
+    .card {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      border: none;
+    }
+
+    /* ── Exercise card transition ─────────────────────── */
+    .exercise-card {
+      transition: opacity 0.4s ease-out;
+    }
+
+    .exercise-card.slide-out {
+      opacity: 0;
+      transform: none;
+    }
+
+    .exercise-card.slide-in {
+      animation: slideIn 0.4s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ══════════════════════════════════════════════════
+       START SCREEN
+       ══════════════════════════════════════════════════ */
+    #view-start {
+      justify-content: center;
+      align-items: center;
+      padding-top: 4rem;
+      padding-bottom: 2rem;
+      gap: 3rem;
+    }
+
+    .start-header {
+      text-align: center;
+    }
+
+    .app-title {
+      font-family: var(--font-jp);
+      font-size: 4rem;
+      font-weight: 400;
+      color: var(--color-text);
+      letter-spacing: 0.1em;
+      margin-bottom: 0;
+    }
+
+    .app-subtitle {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.5rem;
+    }
+
+    .level-badge {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: 0;
+      background: transparent;
+      color: var(--color-text-muted);
+      border-radius: 0;
+      font-size: 0.8rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+    }
+
+    .start-actions {
+      width: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    /* Start Session button — special treatment */
+    .start-actions .btn-primary {
+      display: inline-block;
+      width: auto;
+      padding: 1rem 3rem;
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--color-text);
+      background: transparent;
+      border: 1px solid var(--color-text);
+      border-bottom: 1px solid var(--color-text);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .start-actions .btn-primary:hover {
+      opacity: 0.7;
+    }
+
+    .stats-grid {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      width: 100%;
+    }
+
+    .stat-card {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      text-align: center;
+      border: none;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--color-text);
+      line-height: 1.4;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.125rem;
+    }
+
+    .level-selector {
+      width: 100%;
+    }
+
+    .level-selector label {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .level-selector select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      font-family: var(--font-en);
+      border: 1px solid var(--color-border);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%23a0a0a0'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      cursor: pointer;
+      min-height: 44px;
+      letter-spacing: 0.05em;
+    }
+
+    .level-selector select:focus {
+      outline: none;
+      border-color: var(--color-text);
+    }
+
+    .lesson-selector {
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    .lesson-selector label {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .lesson-selector select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      font-family: var(--font-en);
+      border: 1px solid var(--color-border);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%23a0a0a0'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      cursor: pointer;
+      min-height: 44px;
+      letter-spacing: 0.05em;
+    }
+
+    .lesson-selector select:focus {
+      outline: none;
+      border-color: var(--color-text);
+    }
+
+    /* ══════════════════════════════════════════════════
+       SESSION VIEW
+       ══════════════════════════════════════════════════ */
+    #view-session {
+      padding-top: 0;
+      padding-bottom: 2rem;
+      gap: 2rem;
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-left: -1.5rem;
+      margin-right: -1.5rem;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 2px;
+      background: var(--color-border-light);
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--color-text);
+      border-radius: 0;
+      transition: width 0.6s ease-out;
+      width: 0%;
+    }
+
+    .progress-label {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      font-weight: 400;
+      padding-left: 1.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* Exercise Type Badge */
+    .exercise-type-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Exercise Prompt */
+    .exercise-prompt {
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    .exercise-prompt .instruction {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-bottom: 2rem;
+      letter-spacing: 0.05em;
+    }
+
+    .exercise-prompt .japanese-text {
+      font-family: var(--font-jp);
+      font-size: 2.5rem;
+      font-weight: 400;
+      color: var(--color-text);
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+
+    .exercise-prompt .english-text {
+      font-size: 1.125rem;
+      color: var(--color-text);
+      line-height: 1.6;
+    }
+
+    .exercise-prompt .passage-text {
+      font-family: var(--font-jp);
+      font-size: 1.25rem;
+      line-height: 2;
+      color: var(--color-text);
+      padding: 2rem 0;
+      background: transparent;
+      border-radius: 0;
+      margin-bottom: 1.5rem;
+      border: none;
+      border-top: 1px solid var(--color-border-light);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .exercise-prompt .sentence-with-blank {
+      font-family: var(--font-jp);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--color-text);
+      line-height: 1.8;
+    }
+
+    .exercise-prompt .sentence-with-blank .blank {
+      display: inline-block;
+      min-width: 3rem;
+      border-bottom: 1px solid var(--color-text-muted);
+      margin: 0 0.125rem;
+    }
+
+    /* Options Grid */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Option stagger animation */
+    .options-grid .btn-option {
+      opacity: 0;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .options-grid .btn-option:nth-child(1) { animation-delay: 0ms; }
+    .options-grid .btn-option:nth-child(2) { animation-delay: 100ms; }
+    .options-grid .btn-option:nth-child(3) { animation-delay: 200ms; }
+    .options-grid .btn-option:nth-child(4) { animation-delay: 300ms; }
+    .options-grid .btn-option:nth-child(5) { animation-delay: 400ms; }
+
+    /* Sentence Build Area */
+    .sentence-build-area {
+      margin-bottom: 1.5rem;
+    }
+
+    .build-answer-zone {
+      min-height: 56px;
+      padding: 0.75rem 0;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      border-radius: 0;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      transition: border-color var(--transition-fast);
+    }
+
+    .build-answer-zone:empty::before {
+      content: "Tap words below to build your sentence";
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+    }
+
+    .build-answer-zone.correct-zone {
+      border-color: var(--color-text);
+      border-bottom-width: 2px;
+      background: transparent;
+    }
+
+    .build-answer-zone.incorrect-zone {
+      border-color: var(--color-incorrect);
+      background: transparent;
+    }
+
+    .word-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .word-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.625rem 1rem;
+      font-family: var(--font-jp);
+      font-size: 1.125rem;
+      font-weight: 400;
+      color: var(--color-text);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: 0;
+      cursor: pointer;
+      min-height: 44px;
+      transition: all var(--transition-fast);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .word-chip:hover {
+      border-color: var(--color-text-secondary);
+    }
+
+    .word-chip:active {
+      transform: none;
+    }
+
+    .word-chip.used {
+      opacity: 0.25;
+      cursor: default;
+      transform: none;
+      border-color: var(--color-border-light);
+    }
+
+    .word-chip.in-answer {
+      background: transparent;
+      color: var(--color-text);
+      border-color: var(--color-text);
+    }
+
+    /* Listening & Pronunciation */
+    .audio-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn-audio {
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border: 1px solid var(--color-border);
+      box-shadow: none;
+      padding: 1rem 1.5rem;
+      min-height: 48px;
+    }
+
+    .btn-audio svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .btn-audio:hover {
+      opacity: 0.6;
+      box-shadow: none;
+    }
+
+    .btn-audio:active {
+      transform: none;
+    }
+
+    .btn-audio.speaking {
+      animation: audioPulse 1.2s infinite alternate ease-in-out;
+    }
+
+    @keyframes audioPulse {
+      from { opacity: 1; }
+      to   { opacity: 0.4; }
+    }
+
+    .btn-replay {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid currentColor;
+      border-radius: 0;
+      min-height: 44px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .btn-replay:hover {
+      opacity: 0.6;
+    }
+
+    /* Recording */
+    .btn-record {
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-vermillion);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      border: 1px solid var(--color-vermillion);
+      box-shadow: none;
+      padding: 1rem 1.5rem;
+      min-height: 48px;
+    }
+
+    .btn-record svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .btn-record.recording {
+      animation: recordPulse 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes recordPulse {
+      from { opacity: 1; transform: none; }
+      to   { opacity: 0.4; transform: none; }
+    }
+
+    .recording-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--color-vermillion);
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .recording-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-vermillion);
+      animation: blink 1.2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    .pronunciation-result {
+      width: 100%;
+      padding: 1.5rem 0;
+      background: transparent;
+      border-radius: 0;
+      border: none;
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .pronunciation-result .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .pronunciation-result .detected-text {
+      font-family: var(--font-jp);
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin-bottom: 0.75rem;
+    }
+
+    .pronunciation-result .match-good {
+      color: var(--color-text);
+    }
+
+    .pronunciation-result .match-partial {
+      color: var(--color-text-secondary);
+    }
+
+    .pronunciation-result .match-poor {
+      color: var(--color-incorrect);
+    }
+
+    /* Explanation */
+    .explanation-box {
+      margin-top: 2rem;
+      padding: 1.5rem 0 0 0;
+      background: transparent;
+      border-radius: 0;
+      border-left: none;
+      border-top: 1px solid var(--color-border-light);
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    .ai-explanation {
+      margin-top: 1rem;
+      border-left: none;
+      border-top: none;
+      background: transparent;
+      padding-top: 0;
+    }
+
+    .ai-explanation::before {
+      content: "先生：";
+      color: var(--color-vermillion);
+      font-family: var(--font-jp);
+      font-weight: 400;
+    }
+
+    /* Session Footer */
+    .session-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+      margin-top: auto;
+      padding-top: 2rem;
+    }
+
+    .session-footer .btn-primary {
+      flex: none;
+    }
+
+    /* ══════════════════════════════════════════════════
+       SESSION COMPLETE SCREEN
+       ══════════════════════════════════════════════════ */
+    #view-complete {
+      justify-content: center;
+      align-items: center;
+      padding-top: 4rem;
+      padding-bottom: 2rem;
+      gap: 3rem;
+    }
+
+    .complete-header {
+      text-align: center;
+    }
+
+    .complete-header h2 {
+      font-family: var(--font-jp);
+      font-size: 2.5rem;
+      font-weight: 400;
+      color: var(--color-text);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .complete-header .subtitle {
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .score-display {
+      text-align: center;
+    }
+
+    .score-circle {
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+    }
+
+    .score-circle .score-num {
+      font-size: 3rem;
+      font-weight: 400;
+      line-height: 1;
+      color: var(--color-text);
+    }
+
+    .score-circle .score-denom {
+      font-size: 1rem;
+      opacity: 1;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .score-percent {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.05em;
+      margin-top: 0.5rem;
+    }
+
+    /* Breakdown */
+    .breakdown-list {
+      width: 100%;
+      list-style: none;
+    }
+
+    .breakdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--color-border-light);
+      font-size: 0.85rem;
+    }
+
+    .breakdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .breakdown-type {
+      color: var(--color-text-muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+    }
+
+    .breakdown-score {
+      font-weight: 400;
+      color: var(--color-text);
+    }
+
+    .breakdown-bar {
+      flex: 1;
+      margin: 0 1rem;
+      height: 2px;
+      background: var(--color-border-light);
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: 0;
+      transition: width 0.6s ease-out;
+    }
+
+    .breakdown-bar-fill.good {
+      background: var(--color-text);
+    }
+
+    .breakdown-bar-fill.ok {
+      background: var(--color-text-secondary);
+    }
+
+    .breakdown-bar-fill.poor {
+      background: var(--color-incorrect);
+    }
+
+    .complete-actions {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .complete-actions .btn-primary {
+      width: auto;
+      padding: 1rem 3rem;
+      border: 1px solid var(--color-text);
+      border-bottom: 1px solid var(--color-text);
+      font-size: 0.875rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* ══════════════════════════════════════════════════
+       Responsive
+       ══════════════════════════════════════════════════ */
+    @media (min-width: 768px) {
+      .app {
+        max-width: 440px;
+      }
+
+      .app-title {
+        font-size: 5rem;
+      }
+
+      .exercise-prompt .japanese-text {
+        font-size: 3.5rem;
+      }
+
+      .card {
+        padding: 0;
+      }
+
+      .text-jp-large {
+        font-size: 3.5rem;
+      }
+    }
+
+    /* ── Profile Section ─────────────────────────────── */
+    .profile-section {
+      width: 100%;
+    }
+
+    .profile-welcome {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      border: none;
+      text-align: center;
+    }
+
+    .profile-welcome h3 {
+      font-size: 0.9rem;
+      color: var(--color-text);
+      margin-bottom: 1rem;
+      font-weight: 400;
+    }
+
+    .profile-welcome .profile-input-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .profile-welcome input[type="text"] {
+      flex: 1;
+      padding: 0.75rem 0;
+      font-size: 1rem;
+      font-family: var(--font-en);
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+      outline: none;
+      min-height: 44px;
+      transition: border-color var(--transition-fast);
+    }
+
+    .profile-welcome input[type="text"]:focus {
+      border-bottom-color: var(--color-text);
+    }
+
+    .profile-welcome .btn-create-profile {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--color-text);
+      background: transparent;
+      border: 1px solid var(--color-text);
+      border-radius: 0;
+      white-space: nowrap;
+      min-height: 44px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .profile-welcome .btn-create-profile:hover {
+      opacity: 0.7;
+      background: transparent;
+    }
+
+    .profile-active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .profile-active .profile-name {
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--color-text-muted);
+    }
+
+    .profile-active .btn-switch-profile {
+      padding: 0;
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--color-text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      border-radius: 0;
+      min-height: auto;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .profile-active .btn-switch-profile:hover {
+      border-bottom-color: var(--color-text);
+      background: transparent;
+      opacity: 0.7;
+    }
+
+    .profile-switcher {
+      background: transparent;
+      border-radius: 0;
+      padding: 1.5rem 0;
+      border: none;
+      border-top: 1px solid var(--color-border-light);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .profile-switcher h3 {
+      font-size: 0.85rem;
+      color: var(--color-text);
+      margin-bottom: 1.5rem;
+      font-weight: 400;
+      text-align: center;
+    }
+
+    .profile-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-list-btn {
+      width: 100%;
+      padding: 0.75rem 0;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: var(--color-text);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--color-border-light);
+      border-radius: 0;
+      text-align: left;
+      min-height: 44px;
+      transition: color var(--transition-fast);
+    }
+
+    .profile-list-btn:hover {
+      color: var(--color-vermillion);
+      background: transparent;
+    }
+
+    .profile-list-btn.active-profile {
+      border-bottom: 2px solid var(--color-text);
+      font-weight: 400;
+      color: var(--color-text);
+    }
+
+    .profile-switcher .profile-input-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .profile-switcher input[type="text"] {
+      flex: 1;
+      padding: 0.75rem 0;
+      font-size: 0.9rem;
+      font-family: var(--font-en);
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      border-radius: 0;
+      background: transparent;
+      color: var(--color-text);
+      outline: none;
+      min-height: 44px;
+      transition: border-color var(--transition-fast);
+    }
+
+    .profile-switcher input[type="text"]:focus {
+      border-bottom-color: var(--color-text);
+    }
+
+    .profile-switcher .btn-add-profile {
+      padding: 0.625rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--color-text);
+      background: transparent;
+      border: 1px solid var(--color-text);
+      border-radius: 0;
+      white-space: nowrap;
+      min-height: 44px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .profile-switcher .btn-cancel-switch {
+      display: block;
+      width: 100%;
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      background: transparent;
+      border-radius: 0;
+      min-height: 40px;
+      letter-spacing: 0.05em;
+    }
+
+    .profile-switcher .btn-cancel-switch:hover {
+      color: var(--color-text-secondary);
+      background: transparent;
+      opacity: 0.7;
+    }
+
+    /* ── Progression Section ─────────────────────────── */
+    .progression-section {
+      width: 100%;
+    }
+
+    .progression-card {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .progression-card h4 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-muted);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .progression-item {
+      margin-bottom: 1rem;
+    }
+
+    .progression-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .progression-item .progression-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+    }
+
+    .progression-item .progression-label .prog-name {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+    }
+
+    .progression-item .progression-label .prog-count {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
+    .progression-bar {
+      width: 100%;
+      height: 2px;
+      background: var(--color-border-light);
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .progression-bar-fill {
+      height: 100%;
+      border-radius: 0;
+      background: var(--color-text);
+      transition: width 0.6s ease-out;
+    }
+
+    /* ── Romaji ──────────────────────────────────────── */
+    .romaji-text {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+      font-style: italic;
+      letter-spacing: 0.02em;
+      transition: opacity 0.3s ease;
+    }
+
+    .romaji-text.visible {
+      opacity: 1;
+    }
+
+    .romaji-text.tap-reveal {
+      cursor: pointer;
+      opacity: 0;
+      position: relative;
+    }
+
+    .romaji-text.tap-reveal .romaji-hint {
+      opacity: 1;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      font-style: normal;
+      letter-spacing: 0.05em;
+      text-transform: lowercase;
+    }
+
+    .romaji-text.tap-reveal.revealed {
+      opacity: 1;
+    }
+
+    .romaji-text.tap-reveal.revealed .romaji-hint {
+      display: none;
+    }
+
+    .btn-option .option-romaji {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      font-style: italic;
+      font-family: var(--font-en);
+      margin-top: 0.125rem;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Utility ──────────────────────────────────────── */
+    .hidden {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ══════════════════════════════════════════════════
+       VIEW: START SCREEN
+       ══════════════════════════════════════════════════ -->
+  <div id="view-start" class="view active">
+    <header class="start-header">
+      <h1 class="app-title jp">練習</h1>
+      <p class="app-title" style="font-size:1.25rem; color:var(--color-text-secondary); font-family:var(--font-en); margin-top:-0.25rem;">Renshu</p>
+      <p class="app-subtitle">Your daily Japanese practice</p>
+      <div class="level-badge" id="level-badge">N5</div>
+      <div class="lesson-indicator" id="lesson-indicator" style="margin-top:0.75rem; font-size:0.8rem; color:var(--color-text-secondary); letter-spacing:0.02em;"></div>
+    </header>
+
+    <!-- Profile Section -->
+    <div class="profile-section" id="profile-section">
+      <!-- Dynamically populated by renderProfileSection() -->
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-sessions">0</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-weakest">--</div>
+        <div class="stat-label">Weakest</div>
+      </div>
+    </div>
+
+    <!-- Progression Section -->
+    <div class="progression-section" id="progression-section">
+      <!-- Dynamically populated by renderProgressionSection() -->
+    </div>
+
+    <div class="start-actions">
+      <button class="btn-primary" id="btn-start-session">Start Session</button>
+    </div>
+
+    <div class="level-selector">
+      <label for="level-select">Level</label>
+      <select id="level-select">
+        <option value="N5" selected>N5 - Beginner</option>
+        <option value="N4" disabled>N4 - Coming Soon</option>
+        <option value="N3" disabled>N3 - Coming Soon</option>
+        <option value="N2" disabled>N2 - Coming Soon</option>
+        <option value="N1" disabled>N1 - Coming Soon</option>
+      </select>
+    </div>
+
+    <div class="lesson-selector" id="lesson-selector-container">
+      <label for="lesson-select">Lesson</label>
+      <select id="lesson-select">
+        <!-- Populated dynamically -->
+      </select>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VIEW: SESSION
+       ══════════════════════════════════════════════════ -->
+  <div id="view-session" class="view">
+    <div class="progress-bar-container">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span class="progress-label" id="progress-label">1 / 10</span>
+    </div>
+
+    <div class="card exercise-card" id="exercise-card">
+      <!-- Dynamically populated -->
+    </div>
+
+    <div class="session-footer">
+      <button class="btn-small" id="btn-skip">Skip</button>
+      <button class="btn-primary hidden" id="btn-next">Next</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VIEW: SESSION COMPLETE
+       ══════════════════════════════════════════════════ -->
+  <div id="view-complete" class="view">
+    <div class="complete-header">
+      <h2>Session Complete</h2>
+      <p class="subtitle" id="complete-message">Great effort!</p>
+    </div>
+
+    <div class="score-display">
+      <div class="score-circle">
+        <span class="score-num" id="score-num">0</span>
+        <span class="score-denom" id="score-denom">/ 0</span>
+      </div>
+      <p class="score-percent" id="score-percent">0% correct</p>
+    </div>
+
+    <div class="card" style="width:100%;">
+      <ul class="breakdown-list" id="breakdown-list">
+        <!-- Dynamically populated -->
+      </ul>
+    </div>
+
+    <div class="complete-actions">
+      <button class="btn-primary" id="btn-practice-again">Practice Again</button>
+      <button class="btn-secondary" id="btn-back-home">Back to Home</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+// ══════════════════════════════════════════════════════
+// Imports from external modules
+// ══════════════════════════════════════════════════════
+import n5Content from './src/data/n5-content.js';
+
+// ══════════════════════════════════════════════════════
+// Exercise Generation (inline — lesson-aware Genki I curriculum)
+// ══════════════════════════════════════════════════════
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickN(arr, n) {
+  return shuffle(arr).slice(0, Math.min(n, arr.length));
+}
+
+function pickOne(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// ── Lesson-aware content helpers ──────────────────────
+
+/** Get all vocabulary up to and including a given lesson index */
+function getVocabUpToLesson(lessons, lessonIdx) {
+  const vocab = [];
+  for (let i = 0; i <= lessonIdx && i < lessons.length; i++) {
+    for (let j = 0; j < lessons[i].vocabulary.length; j++) {
+      vocab.push({ ...lessons[i].vocabulary[j], _lessonIdx: i, _vocabIdx: j, _globalKey: `L${i}_${j}` });
+    }
+  }
+  return vocab;
+}
+
+/** Get all sentences up to and including a given lesson index */
+function getSentencesUpToLesson(lessons, lessonIdx) {
+  const sentences = [];
+  for (let i = 0; i <= lessonIdx && i < lessons.length; i++) {
+    for (const s of lessons[i].sentences) {
+      sentences.push(s);
+    }
+  }
+  return sentences;
+}
+
+/** Get all grammar fills up to and including a given lesson index */
+function getGrammarFillsUpToLesson(lessons, lessonIdx) {
+  const fills = [];
+  for (let i = 0; i <= lessonIdx && i < lessons.length; i++) {
+    for (let j = 0; j < (lessons[i].grammarFills || []).length; j++) {
+      fills.push({ ...lessons[i].grammarFills[j], _lessonIdx: i, _grammarIdx: j, _globalKey: `G${i}_${j}` });
+    }
+  }
+  return fills;
+}
+
+/** Get all sentence builds up to and including a given lesson index */
+function getSentenceBuildsUpToLesson(lessons, lessonIdx) {
+  const builds = [];
+  for (let i = 0; i <= lessonIdx && i < lessons.length; i++) {
+    for (const b of (lessons[i].sentenceBuilds || [])) {
+      builds.push(b);
+    }
+  }
+  return builds;
+}
+
+/** Get current lesson info */
+function getCurrentLessonInfo(lessons, lessonIdx) {
+  if (lessonIdx >= 0 && lessonIdx < lessons.length) {
+    return lessons[lessonIdx];
+  }
+  return lessons[lessons.length - 1];
+}
+
+// ── Romaji helpers ───────────────────────────────────
+
+function getCurrentPhase() {
+  const history = loadSkillHistory();
+  const lessonIndex = history.currentLesson || 0;
+  const lessons = n5Content.lessons;
+  if (lessonIndex < lessons.length) {
+    return lessons[lessonIndex].phase;
+  }
+  return 1;
+}
+
+function romajiHtml(romaji, phase) {
+  if (!romaji) return '';
+  if (phase <= 1) {
+    // Phase 0 (Decode) and Phase 1 (Foundation): always visible
+    return `<p class="romaji-text visible">${escHtml(romaji)}</p>`;
+  } else {
+    // Tap to reveal
+    return `<p class="romaji-text tap-reveal" onclick="this.classList.toggle('revealed')">${escHtml(romaji)}<span class="romaji-hint">tap for romaji</span></p>`;
+  }
+}
+
+// ── Exercise maker functions ──────────────────────────
+
+function makeVocabQuiz(allVocab, vocabKey) {
+  const item = vocabKey ? allVocab.find(v => v._globalKey === vocabKey) || pickOne(allVocab) : pickOne(allVocab);
+  const displayWord = item.kanji || item.kana;
+  const reverse = Math.random() < 0.5;
+
+  if (reverse) {
+    const distractorItems = pickN(allVocab.filter(v => v.english !== item.english), 3);
+    const distractors = distractorItems.map(v => v.kanji || v.kana);
+    const correctOption = displayWord;
+    const allOptions = shuffle([
+      { text: correctOption, romaji: item.romaji },
+      ...distractorItems.map(v => ({ text: v.kanji || v.kana, romaji: v.romaji }))
+    ]);
+    return {
+      type: 'vocab_quiz',
+      japanese: item.english,
+      options: allOptions.map(o => o.text),
+      optionRomaji: allOptions.reduce((acc, o) => { acc[o.text] = o.romaji; return acc; }, {}),
+      correct_answer: correctOption,
+      explanation: `${item.kana} (${item.romaji}) = ${item.english}`,
+      _vocabIndex: item._globalKey,
+      reverse: true
+    };
+  }
+
+  const distractors = pickN(allVocab.filter(v => v.english !== item.english), 3).map(v => v.english);
+  return {
+    type: 'vocab_quiz',
+    japanese: displayWord,
+    romaji: item.romaji,
+    options: shuffle([item.english, ...distractors]),
+    correct_answer: item.english,
+    explanation: `${item.kana} (${item.romaji}) = ${item.english}`,
+    _vocabIndex: item._globalKey,
+    reverse: false
+  };
+}
+
+function makeGrammarFill(allGrammarFills, grammarKey) {
+  const item = grammarKey ? allGrammarFills.find(g => g._globalKey === grammarKey) || pickOne(allGrammarFills) : pickOne(allGrammarFills);
+  return {
+    type: 'grammar_fill',
+    question: item.sentence,
+    romaji: item.reading || item.romaji || null,
+    options: shuffle([...item.options]),
+    correct_answer: item.correct_answer,
+    explanation: item.explanation,
+    _grammarIndex: item._globalKey
+  };
+}
+
+function makeSentenceBuild(allSentenceBuilds) {
+  if (allSentenceBuilds.length === 0) return null;
+  const item = pickOne(allSentenceBuilds);
+  let scrambled = shuffle([...item.words]);
+  let attempts = 0;
+  while (scrambled.join('') === item.correct_answer && attempts < 10) {
+    scrambled = shuffle([...item.words]);
+    attempts++;
+  }
+  return {
+    type: 'sentence_build',
+    english: item.english,
+    question: item.english,
+    words: scrambled,
+    correct_answer: item.correct_answer,
+    romaji: item.romaji || null,
+    explanation: item.explanation
+  };
+}
+
+function makeReading(allSentences) {
+  if (allSentences.length < 3) return null;
+  const item = pickOne(allSentences);
+  const distractors = pickN(allSentences.filter(s => s.english !== item.english), 2).map(s => s.english);
+  return {
+    type: 'reading',
+    japanese: item.japanese,
+    passage: item.japanese,
+    romaji: item.romaji || null,
+    question: 'What does this sentence mean?',
+    options: shuffle([item.english, ...distractors]),
+    correct_answer: item.english,
+    explanation: `${item.japanese} (${item.romaji}) = ${item.english}`
+  };
+}
+
+function makeListening(allVocab, vocabKey) {
+  const item = vocabKey ? allVocab.find(v => v._globalKey === vocabKey) || pickOne(allVocab) : pickOne(allVocab);
+  const displayWord = item.kanji || item.kana;
+  const distractors = pickN(allVocab.filter(v => v.english !== item.english), 3).map(v => v.english);
+  return {
+    type: 'listening',
+    japanese: displayWord,
+    question: displayWord,
+    romaji: item.romaji || null,
+    options: shuffle([item.english, ...distractors]),
+    correct_answer: item.english,
+    explanation: `${item.kana} (${item.romaji}) = ${item.english}`,
+    _vocabIndex: item._globalKey
+  };
+}
+
+function makePronunciation(allVocab, allSentences, vocabKey) {
+  const useVocab = vocabKey || Math.random() < 0.6;
+  if (useVocab) {
+    const item = vocabKey ? allVocab.find(v => v._globalKey === vocabKey) || pickOne(allVocab) : pickOne(allVocab);
+    return {
+      type: 'pronunciation',
+      japanese: item.kanji || item.kana,
+      question: item.kanji || item.kana,
+      romaji: item.romaji || null,
+      correct_answer: item.kana,
+      explanation: `${item.kana} (${item.romaji})`,
+      _vocabIndex: item._globalKey
+    };
+  }
+  const easyItems = allSentences.filter(s => s.difficulty <= 2);
+  if (easyItems.length === 0) return null;
+  const item = pickOne(easyItems);
+  return {
+    type: 'pronunciation',
+    japanese: item.japanese,
+    question: item.japanese,
+    romaji: item.romaji || null,
+    correct_answer: item.japanese,
+    explanation: `${item.romaji} = ${item.english}`
+  };
+}
+
+// ── Lesson advancement logic (disabled — free navigation) ──
+
+function checkLessonAdvancement(history, lessons) {
+  // No-op: users can freely move between lessons via the lesson selector.
+  // Kept as a stub so callers don't break.
+}
+
+function generateExercises(content, count = 13) {
+  const history = loadSkillHistory();
+  const lessons = content.lessons;
+
+  // Initialize progression fields if missing
+  if (!history.learnedVocab) history.learnedVocab = [];
+  if (!history.learnedGrammar) history.learnedGrammar = [];
+  if (!history.seenVocab) history.seenVocab = [];
+  if (!history.seenGrammar) history.seenGrammar = [];
+  if (!history.vocabCorrectCounts) history.vocabCorrectCounts = {};
+  if (!history.grammarCorrectCounts) history.grammarCorrectCounts = {};
+  if (typeof history.currentLesson !== 'number') history.currentLesson = 0;
+  // Migration: remove old numeric indices if present
+  if (typeof history.currentVocabIndex === 'number') delete history.currentVocabIndex;
+  if (typeof history.currentGrammarIndex === 'number') delete history.currentGrammarIndex;
+
+  // Check for lesson advancement before generating
+  checkLessonAdvancement(history, lessons);
+
+  const currentLessonIdx = history.currentLesson || 0;
+  const currentLesson = lessons[currentLessonIdx];
+  const isPhase0 = currentLesson.phase === 0;
+
+  // Build pools: current lesson for new material, all previous for review
+  const allVocab = getVocabUpToLesson(lessons, currentLessonIdx);
+  const allSentences = getSentencesUpToLesson(lessons, currentLessonIdx);
+  const allGrammarFills = isPhase0 ? [] : getGrammarFillsUpToLesson(lessons, currentLessonIdx);
+  const allSentenceBuilds = isPhase0 ? [] : getSentenceBuildsUpToLesson(lessons, currentLessonIdx);
+
+  // Current lesson vocab & grammar (new material)
+  const currentVocab = allVocab.filter(v => v._lessonIdx === currentLessonIdx);
+  const currentGrammarFills = isPhase0 ? [] : allGrammarFills.filter(g => g._lessonIdx === currentLessonIdx);
+
+  const exercises = [];
+
+  // Determine NEW vocab items to introduce from current lesson (3-5)
+  const unseenCurrentVocab = currentVocab.filter(v => !history.seenVocab.includes(v._globalKey));
+  const newVocabCount = Math.min(3 + Math.floor(Math.random() * 3), unseenCurrentVocab.length);
+  const newVocabKeys = unseenCurrentVocab.slice(0, newVocabCount).map(v => v._globalKey);
+
+  // Determine NEW grammar fills to introduce from current lesson (1-2) — skip for Phase 0
+  const unseenCurrentGrammar = currentGrammarFills.filter(g => !history.seenGrammar.includes(g._globalKey));
+  const newGrammarCount = isPhase0 ? 0 : Math.min(1 + Math.floor(Math.random() * 2), unseenCurrentGrammar.length);
+  const newGrammarKeys = unseenCurrentGrammar.slice(0, newGrammarCount).map(g => g._globalKey);
+
+  // Mark new items as seen
+  for (const key of newVocabKeys) {
+    if (!history.seenVocab.includes(key)) history.seenVocab.push(key);
+  }
+  for (const key of newGrammarKeys) {
+    if (!history.seenGrammar.includes(key)) history.seenGrammar.push(key);
+  }
+  saveSkillHistory(history);
+
+  // Create exercises for NEW vocab items
+  for (const key of newVocabKeys) {
+    exercises.push(makeVocabQuiz(allVocab, key));
+  }
+
+  // Create exercises for NEW grammar fills (skipped for Phase 0)
+  for (const key of newGrammarKeys) {
+    exercises.push(makeGrammarFill(allGrammarFills, key));
+  }
+
+  // One sentence_build and one reading always (if available) — skip sentence_build for Phase 0
+  if (!isPhase0 && allSentenceBuilds.length > 0) {
+    const sb = makeSentenceBuild(allSentenceBuilds);
+    if (sb) exercises.push(sb);
+  }
+  if (allSentences.length >= 3) {
+    const rd = makeReading(allSentences);
+    if (rd) exercises.push(rd);
+  }
+
+  // Review pool: seen vocab from all lessons
+  const reviewVocabPool = history.seenVocab.filter(k => !newVocabKeys.includes(k));
+  const sortedReviewVocab = [...reviewVocabPool].sort((a, b) => {
+    const ca = history.vocabCorrectCounts[a] || 0;
+    const cb = history.vocabCorrectCounts[b] || 0;
+    return ca - cb;
+  });
+
+  // Fill remaining slots
+  while (exercises.length < count) {
+    const rand = Math.random();
+
+    if (isPhase0) {
+      // Phase 0: only vocab_quiz, listening, pronunciation, reading — no grammar or sentence_build
+      if (rand < 0.40 && sortedReviewVocab.length > 0) {
+        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
+        exercises.push(makeVocabQuiz(allVocab, reviewKey));
+      } else if (rand < 0.60 && sortedReviewVocab.length > 0) {
+        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
+        exercises.push(makeListening(allVocab, reviewKey));
+      } else if (rand < 0.80 && sortedReviewVocab.length > 0) {
+        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
+        exercises.push(makePronunciation(allVocab, allSentences, reviewKey));
+      } else if (allSentences.length >= 3) {
+        const rd = makeReading(allSentences);
+        if (rd) exercises.push(rd);
+        else exercises.push(makeVocabQuiz(allVocab));
+      } else {
+        exercises.push(makeVocabQuiz(allVocab));
+      }
+    } else {
+      // Normal phases (1-4): full exercise mix
+      if (rand < 0.35 && sortedReviewVocab.length > 0) {
+        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
+        exercises.push(makeVocabQuiz(allVocab, reviewKey));
+      } else if (rand < 0.50 && sortedReviewVocab.length > 0) {
+        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
+        exercises.push(makeListening(allVocab, reviewKey));
+      } else if (rand < 0.65 && sortedReviewVocab.length > 0) {
+        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
+        exercises.push(makePronunciation(allVocab, allSentences, reviewKey));
+      } else if (rand < 0.75 && allGrammarFills.length > 0) {
+        const reviewGrammarPool = history.seenGrammar.filter(k => !newGrammarKeys.includes(k));
+        if (reviewGrammarPool.length > 0) {
+          const reviewKey = reviewGrammarPool[Math.floor(Math.random() * reviewGrammarPool.length)];
+          exercises.push(makeGrammarFill(allGrammarFills, reviewKey));
+        } else if (allGrammarFills.length > 0) {
+          exercises.push(makeGrammarFill(allGrammarFills));
+        } else if (allSentenceBuilds.length > 0) {
+          const sb = makeSentenceBuild(allSentenceBuilds);
+          if (sb) exercises.push(sb);
+          else exercises.push(makeVocabQuiz(allVocab));
+        } else {
+          exercises.push(makeVocabQuiz(allVocab));
+        }
+      } else if (rand < 0.85 && allSentenceBuilds.length > 0) {
+        const sb = makeSentenceBuild(allSentenceBuilds);
+        if (sb) exercises.push(sb);
+        else exercises.push(makeVocabQuiz(allVocab));
+      } else if (allSentences.length >= 3) {
+        const rd = makeReading(allSentences);
+        if (rd) exercises.push(rd);
+        else exercises.push(makeVocabQuiz(allVocab));
+      } else {
+        exercises.push(makeVocabQuiz(allVocab));
+      }
+    }
+  }
+
+  return shuffle(exercises);
+}
+
+// ══════════════════════════════════════════════════════
+// Profile Management
+// ══════════════════════════════════════════════════════
+const PROFILES_KEY = 'renshu_profiles';
+const ACTIVE_PROFILE_KEY = 'renshu_active_profile';
+
+function getProfileList() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILES_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProfileList(profiles) {
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+}
+
+function getActiveProfile() {
+  return localStorage.getItem(ACTIVE_PROFILE_KEY) || null;
+}
+
+function setActiveProfile(name) {
+  localStorage.setItem(ACTIVE_PROFILE_KEY, name);
+}
+
+function getStorageKeys() {
+  const profile = getActiveProfile();
+  if (!profile) return { history: 'renshu_skill_history', stats: 'renshu_stats' };
+  return {
+    history: `renshu_profile_${profile}_history`,
+    stats: `renshu_profile_${profile}_stats`
+  };
+}
+
+function createProfile(name) {
+  const profiles = getProfileList();
+  if (!profiles.includes(name)) {
+    profiles.push(name);
+    saveProfileList(profiles);
+  }
+  setActiveProfile(name);
+}
+
+// Profile switching state
+let showingProfileSwitcher = false;
+
+// ══════════════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════════════
+
+let currentIndex = 0;     // current exercise index within session
+let exercises = [];       // array of exercises for the current session
+let answered = false;     // whether the current exercise has been answered
+let sessionResults = [];  // array of { type, correct } for each answered exercise
+
+// TTS
+let voices = [];
+let jaVoice = null;
+
+// STT
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecording = false;
+
+// ══════════════════════════════════════════════════════
+// DOM References
+// ══════════════════════════════════════════════════════
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+const viewStart    = $('#view-start');
+const viewSession  = $('#view-session');
+const viewComplete = $('#view-complete');
+
+const btnStartSession = $('#btn-start-session');
+const btnSkip          = $('#btn-skip');
+const btnNext          = $('#btn-next');
+const btnPracticeAgain = $('#btn-practice-again');
+const btnBackHome      = $('#btn-back-home');
+
+const progressFill  = $('#progress-fill');
+const progressLabel = $('#progress-label');
+const exerciseCard  = $('#exercise-card');
+
+// ══════════════════════════════════════════════════════
+// localStorage helpers (profile-scoped)
+// ══════════════════════════════════════════════════════
+function loadSkillHistory() {
+  const keys = getStorageKeys();
+  try {
+    return JSON.parse(localStorage.getItem(keys.history)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveSkillHistory(history) {
+  const keys = getStorageKeys();
+  localStorage.setItem(keys.history, JSON.stringify(history));
+}
+
+function loadStats() {
+  const keys = getStorageKeys();
+  try {
+    return JSON.parse(localStorage.getItem(keys.stats)) || {
+      streak: 0,
+      totalSessions: 0,
+      lastSessionDate: null
+    };
+  } catch {
+    return { streak: 0, totalSessions: 0, lastSessionDate: null };
+  }
+}
+
+function saveStats(stats) {
+  const keys = getStorageKeys();
+  localStorage.setItem(keys.stats, JSON.stringify(stats));
+}
+
+function updateStatsAfterSession() {
+  const stats = loadStats();
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+  if (stats.lastSessionDate === today) {
+    // already tracked today
+  } else if (stats.lastSessionDate === yesterday) {
+    stats.streak += 1;
+  } else {
+    stats.streak = 1;
+  }
+
+  stats.totalSessions += 1;
+  stats.lastSessionDate = today;
+  saveStats(stats);
+}
+
+function getWeakestSkill() {
+  const history = loadSkillHistory();
+  const exerciseTypes = ['vocab_quiz', 'grammar_fill', 'sentence_build', 'reading', 'listening', 'pronunciation'];
+
+  let weakest = null;
+  let lowestRate = Infinity;
+
+  for (const type of exerciseTypes) {
+    const h = history[type];
+    if (!h || h.total === 0) continue;
+    const rate = h.correct / h.total;
+    if (rate < lowestRate) {
+      lowestRate = rate;
+      weakest = type;
+    }
+  }
+
+  if (!weakest) return '--';
+
+  const labels = {
+    vocab_quiz: 'Vocab',
+    grammar_fill: 'Grammar',
+    sentence_build: 'Build',
+    reading: 'Reading',
+    listening: 'Listen',
+    pronunciation: 'Pronun.'
+  };
+
+  return labels[weakest] || weakest;
+}
+
+function recordExerciseResult(type, correct, vocabKey, grammarKey) {
+  const history = loadSkillHistory();
+  if (!history[type]) {
+    history[type] = { correct: 0, total: 0 };
+  }
+  history[type].total += 1;
+  if (correct) history[type].correct += 1;
+
+  // Initialize progression fields if missing
+  if (!history.learnedVocab) history.learnedVocab = [];
+  if (!history.learnedGrammar) history.learnedGrammar = [];
+  if (!history.seenVocab) history.seenVocab = [];
+  if (!history.seenGrammar) history.seenGrammar = [];
+  if (!history.vocabCorrectCounts) history.vocabCorrectCounts = {};
+  if (!history.grammarCorrectCounts) history.grammarCorrectCounts = {};
+  if (typeof history.currentLesson !== 'number') history.currentLesson = 0;
+
+  // Track vocab item mastery (keys are now strings like "L1_3")
+  if (vocabKey !== undefined && vocabKey !== null) {
+    if (!history.seenVocab.includes(vocabKey)) {
+      history.seenVocab.push(vocabKey);
+    }
+    if (correct) {
+      if (!history.vocabCorrectCounts[vocabKey]) history.vocabCorrectCounts[vocabKey] = 0;
+      history.vocabCorrectCounts[vocabKey] += 1;
+      if (history.vocabCorrectCounts[vocabKey] >= 2 && !history.learnedVocab.includes(vocabKey)) {
+        history.learnedVocab.push(vocabKey);
+      }
+    }
+  }
+
+  // Track grammar item mastery (keys are now strings like "G1_2")
+  if (grammarKey !== undefined && grammarKey !== null) {
+    if (!history.seenGrammar.includes(grammarKey)) {
+      history.seenGrammar.push(grammarKey);
+    }
+    if (correct) {
+      if (!history.grammarCorrectCounts[grammarKey]) history.grammarCorrectCounts[grammarKey] = 0;
+      history.grammarCorrectCounts[grammarKey] += 1;
+      if (history.grammarCorrectCounts[grammarKey] >= 2 && !history.learnedGrammar.includes(grammarKey)) {
+        history.learnedGrammar.push(grammarKey);
+      }
+    }
+  }
+
+  // Check lesson advancement after recording
+  checkLessonAdvancement(history, n5Content.lessons);
+
+  saveSkillHistory(history);
+}
+
+// ══════════════════════════════════════════════════════
+// View Management
+// ══════════════════════════════════════════════════════
+function showView(viewId) {
+  const allViews = [viewStart, viewSession, viewComplete];
+
+  allViews.forEach(v => {
+    if (v.classList.contains('active')) {
+      v.classList.remove('active');
+      v.classList.remove('fade-in');
+    }
+  });
+
+  // Small delay so the fade-out completes before showing new view
+  requestAnimationFrame(() => {
+    const target = document.getElementById(viewId);
+    target.classList.add('active', 'fade-in');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// Start Screen
+// ══════════════════════════════════════════════════════
+function renderProfileSection() {
+  const profileSection = $('#profile-section');
+  const profiles = getProfileList();
+  const activeProfile = getActiveProfile();
+
+  if (!activeProfile || profiles.length === 0) {
+    // No profile — show welcome/create prompt
+    profileSection.innerHTML = `
+      <div class="profile-welcome">
+        <h3>Welcome! Enter your name to start</h3>
+        <div class="profile-input-row">
+          <input type="text" id="input-profile-name" placeholder="Your name" maxlength="20">
+          <button class="btn-create-profile" id="btn-create-profile">Create Profile</button>
+        </div>
+      </div>
+    `;
+    // Hide stats and progression until profile is created
+    $('.stats-grid').classList.add('hidden');
+    $('#progression-section').classList.add('hidden');
+    $('.start-actions').classList.add('hidden');
+    $('.level-selector').classList.add('hidden');
+    $('#lesson-selector-container').classList.add('hidden');
+
+    // Wire up create button
+    const btnCreate = $('#btn-create-profile');
+    const inputName = $('#input-profile-name');
+
+    btnCreate.addEventListener('click', () => {
+      const name = inputName.value.trim();
+      if (name) {
+        createProfile(name);
+        showingProfileSwitcher = false;
+        renderStartScreen();
+      }
+    });
+
+    inputName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const name = inputName.value.trim();
+        if (name) {
+          createProfile(name);
+          showingProfileSwitcher = false;
+          renderStartScreen();
+        }
+      }
+    });
+    return;
+  }
+
+  // Profile exists — show everything
+  $('.stats-grid').classList.remove('hidden');
+  $('#progression-section').classList.remove('hidden');
+  $('.start-actions').classList.remove('hidden');
+  $('.level-selector').classList.remove('hidden');
+  $('#lesson-selector-container').classList.remove('hidden');
+
+  if (showingProfileSwitcher) {
+    // Show profile switcher view
+    let html = `<div class="profile-switcher"><h3>Switch Profile</h3><div class="profile-list">`;
+    for (const name of profiles) {
+      const isActive = name === activeProfile ? ' active-profile' : '';
+      html += `<button class="profile-list-btn${isActive}" data-profile-name="${escAttr(name)}">${escHtml(name)}${name === activeProfile ? ' (current)' : ''}</button>`;
+    }
+    html += `</div>`;
+    html += `<div class="profile-input-row">
+      <input type="text" id="input-new-profile" placeholder="New profile name" maxlength="20">
+      <button class="btn-add-profile" id="btn-add-new-profile">Add</button>
+    </div>`;
+    html += `<button class="btn-cancel-switch" id="btn-cancel-switch">Cancel</button>`;
+    html += `</div>`;
+    profileSection.innerHTML = html;
+
+    // Wire up profile selection buttons
+    profileSection.querySelectorAll('.profile-list-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.profileName;
+        setActiveProfile(name);
+        showingProfileSwitcher = false;
+        renderStartScreen();
+      });
+    });
+
+    // Wire up add new profile
+    const btnAddNew = $('#btn-add-new-profile');
+    const inputNew = $('#input-new-profile');
+    btnAddNew.addEventListener('click', () => {
+      const name = inputNew.value.trim();
+      if (name) {
+        createProfile(name);
+        showingProfileSwitcher = false;
+        renderStartScreen();
+      }
+    });
+    inputNew.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const name = inputNew.value.trim();
+        if (name) {
+          createProfile(name);
+          showingProfileSwitcher = false;
+          renderStartScreen();
+        }
+      }
+    });
+
+    // Wire up cancel
+    $('#btn-cancel-switch').addEventListener('click', () => {
+      showingProfileSwitcher = false;
+      renderProfileSection();
+    });
+    return;
+  }
+
+  // Normal view: show current profile
+  profileSection.innerHTML = `
+    <div class="profile-active">
+      <span class="profile-name">${escHtml(activeProfile)}</span>
+      <button class="btn-switch-profile" id="btn-switch-profile">Switch Profile</button>
+    </div>
+  `;
+
+  $('#btn-switch-profile').addEventListener('click', () => {
+    showingProfileSwitcher = true;
+    renderProfileSection();
+  });
+}
+
+function renderProgressionSection() {
+  const section = $('#progression-section');
+  const activeProfile = getActiveProfile();
+  if (!activeProfile) {
+    section.innerHTML = '';
+    return;
+  }
+
+  const history = loadSkillHistory();
+  const lessons = n5Content.lessons;
+  const currentLessonIdx = history.currentLesson || 0;
+  const currentLesson = lessons[currentLessonIdx];
+
+  // Count total vocab across all lessons
+  let totalVocab = 0;
+  let totalGrammarFills = 0;
+  for (const lesson of lessons) {
+    totalVocab += lesson.vocabulary.length;
+    totalGrammarFills += (lesson.grammarFills || []).length;
+  }
+
+  const learnedVocab = (history.learnedVocab || []).length;
+  const learnedGrammar = (history.learnedGrammar || []).length;
+  const vocabPct = totalVocab > 0 ? Math.round((learnedVocab / totalVocab) * 100) : 0;
+  const grammarPct = totalGrammarFills > 0 ? Math.round((learnedGrammar / totalGrammarFills) * 100) : 0;
+
+  // Current lesson progress
+  const lessonVocabTotal = currentLesson.vocabulary.length;
+  const lessonLearnedVocab = (history.learnedVocab || []).filter(k => k.startsWith(`L${currentLessonIdx}_`)).length;
+  const lessonPct = lessonVocabTotal > 0 ? Math.round((lessonLearnedVocab / lessonVocabTotal) * 100) : 0;
+
+  // Phase labels
+  const phaseLabels = { 0: 'Decode', 1: 'Foundation', 2: 'Structure', 3: 'Flow', 4: 'Independence' };
+  const phaseLabel = phaseLabels[currentLesson.phase] || '';
+
+  section.innerHTML = `
+    <div class="progression-card">
+      <h4>Course Progress</h4>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Current Lesson</span>
+          <span class="prog-count">${lessonLearnedVocab} / ${lessonVocabTotal} vocab learned (${lessonPct}%)</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${lessonPct}%"></div>
+        </div>
+      </div>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Overall Vocabulary</span>
+          <span class="prog-count">${learnedVocab} / ${totalVocab} learned</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${vocabPct}%"></div>
+        </div>
+      </div>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Grammar</span>
+          <span class="prog-count">${learnedGrammar} / ${totalGrammarFills} learned</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${grammarPct}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Update lesson indicator
+  const indicator = $('#lesson-indicator');
+  if (indicator) {
+    indicator.textContent = `Phase ${currentLesson.phase}: ${phaseLabel} \u2014 ${currentLesson.genki_ref}: ${currentLesson.title}`;
+  }
+}
+
+function renderLessonSelector() {
+  const select = document.getElementById('lesson-select');
+  if (!select) return;
+  const history = loadSkillHistory();
+  const currentLesson = history.currentLesson || 0;
+
+  select.innerHTML = '';
+  n5Content.lessons.forEach((lesson, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Phase ${lesson.phase}: ${lesson.title}`;
+    if (i === currentLesson) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  // Remove old listener by cloning
+  const newSelect = select.cloneNode(true);
+  select.parentNode.replaceChild(newSelect, select);
+
+  newSelect.addEventListener('change', () => {
+    const history = loadSkillHistory();
+    history.currentLesson = parseInt(newSelect.value, 10);
+    saveSkillHistory(history);
+    renderStartScreen();
+  });
+}
+
+function renderStartScreen() {
+  renderProfileSection();
+  const activeProfile = getActiveProfile();
+  if (!activeProfile) return;
+  const stats = loadStats();
+  $('#stat-streak').textContent = stats.streak || 0;
+  $('#stat-sessions').textContent = stats.totalSessions || 0;
+  $('#stat-weakest').textContent = getWeakestSkill();
+  renderProgressionSection();
+  renderLessonSelector();
+}
+
+// ══════════════════════════════════════════════════════
+// Session Logic
+// ══════════════════════════════════════════════════════
+async function startSession() {
+  exercises = generateExercises(n5Content, 13);
+  currentIndex = 0;
+  sessionResults = [];
+  answered = false;
+
+  showView('view-session');
+  renderExercise();
+}
+
+function renderExercise() {
+  if (currentIndex >= exercises.length) {
+    finishSession();
+    return;
+  }
+
+  answered = false;
+  btnNext.classList.add('hidden');
+  btnSkip.classList.remove('hidden');
+
+  // Update progress
+  const total = exercises.length;
+  progressLabel.textContent = `${currentIndex + 1} / ${total}`;
+  progressFill.style.width = `${((currentIndex) / total) * 100}%`;
+
+  const ex = exercises[currentIndex];
+
+  // Slide transition
+  exerciseCard.classList.remove('slide-in');
+  exerciseCard.classList.add('slide-out');
+
+  setTimeout(() => {
+    exerciseCard.classList.remove('slide-out');
+    renderExerciseContent(ex);
+    exerciseCard.classList.add('slide-in');
+  }, 200);
+}
+
+function renderExerciseContent(ex) {
+  const type = ex.type;
+
+  const typeLabels = {
+    vocab_quiz: 'Vocabulary',
+    grammar_fill: 'Grammar',
+    sentence_build: 'Sentence Building',
+    reading: 'Reading',
+    listening: 'Listening',
+    pronunciation: 'Pronunciation'
+  };
+
+  let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
+
+  switch (type) {
+    case 'vocab_quiz':
+      html += renderVocabQuiz(ex);
+      break;
+    case 'grammar_fill':
+      html += renderGrammarFill(ex);
+      break;
+    case 'sentence_build':
+      html += renderSentenceBuild(ex);
+      break;
+    case 'reading':
+      html += renderReading(ex);
+      break;
+    case 'listening':
+      html += renderListening(ex);
+      break;
+    case 'pronunciation':
+      html += renderPronunciation(ex);
+      break;
+    default:
+      html += `<p>Unknown exercise type: ${type}</p>`;
+  }
+
+  exerciseCard.innerHTML = html;
+
+  // Post-render setup
+  if (type === 'sentence_build') {
+    setupSentenceBuild(ex);
+  } else if (type === 'listening') {
+    // Auto-play audio after short delay
+    setTimeout(() => speakJapanese(ex.japanese || ex.question), 400);
+  } else if (type === 'pronunciation') {
+    setupPronunciation(ex);
+  }
+}
+
+// ── Vocab Quiz ──────────────────────────────────────
+function renderVocabQuiz(ex) {
+  const phase = getCurrentPhase();
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">${ex.reverse ? 'Choose the Japanese word' : 'What does this word mean?'}</p>
+      <p class="japanese-text">${escHtml(ex.japanese)}</p>
+      ${!ex.reverse ? romajiHtml(ex.romaji, phase) : ''}
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (let i = 0; i < ex.options.length; i++) {
+    const optText = escHtml(ex.options[i]);
+    // For reverse quizzes (options are Japanese), show romaji on options in Phase 1
+    if (ex.reverse && ex.optionRomaji && phase === 1) {
+      const optRomaji = ex.optionRomaji[ex.options[i]];
+      html += `<button class="btn-option jp" data-answer="${escAttr(ex.options[i])}" onclick="window.__selectOption(this)">${optText}${optRomaji ? `<span class="option-romaji">${escHtml(optRomaji)}</span>` : ''}</button>`;
+    } else {
+      html += `<button class="btn-option${ex.reverse ? ' jp' : ''}" data-answer="${escAttr(ex.options[i])}" onclick="window.__selectOption(this)">${optText}</button>`;
+    }
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
+}
+
+// ── Grammar Fill ────────────────────────────────────
+function renderGrammarFill(ex) {
+  const phase = getCurrentPhase();
+  // Replace ____ or the blank marker with styled blank
+  const sentenceHtml = escHtml(ex.question).replace(/_{2,}|（\s*）|\(\s*\)/g, '<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Choose the correct word to fill the blank</p>
+      <p class="sentence-with-blank">${sentenceHtml}</p>
+      ${romajiHtml(ex.romaji, phase)}
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (let i = 0; i < ex.options.length; i++) {
+    html += `<button class="btn-option jp" data-answer="${escAttr(ex.options[i])}" onclick="window.__selectOption(this)">${escHtml(ex.options[i])}</button>`;
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
+}
+
+// ── Reading ─────────────────────────────────────────
+function renderReading(ex) {
+  const phase = getCurrentPhase();
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Read the passage and answer the question</p>
+      <div class="passage-text">${escHtml(ex.passage || ex.japanese)}</div>
+      ${romajiHtml(ex.romaji, phase)}
+      <p class="text-jp-body" style="margin-top:0.75rem;">${escHtml(ex.question)}</p>
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (let i = 0; i < ex.options.length; i++) {
+    html += `<button class="btn-option" data-answer="${escAttr(ex.options[i])}" onclick="window.__selectOption(this)">${escHtml(ex.options[i])}</button>`;
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
+}
+
+// ── Sentence Build ──────────────────────────────────
+function renderSentenceBuild(ex) {
+  const words = ex.words || ex.words_to_arrange || [];
+
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Arrange the words into the correct Japanese sentence</p>
+      <p class="english-text">${escHtml(ex.english || ex.question)}</p>
+    </div>
+    <div class="sentence-build-area">
+      <div class="build-answer-zone" id="answer-zone"></div>
+      <div class="word-chips" id="word-chips">
+  `;
+  for (let i = 0; i < words.length; i++) {
+    html += `<span class="word-chip" data-word="${escAttr(words[i])}" data-index="${i}">${escHtml(words[i])}</span>`;
+  }
+  html += `
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-check-build" disabled>Check Answer</button>
+    <div id="explanation-slot"></div>
+  `;
+  return html;
+}
+
+function setupSentenceBuild(ex) {
+  const chips = exerciseCard.querySelectorAll('.word-chip');
+  const answerZone = exerciseCard.querySelector('#answer-zone');
+  const btnCheck = exerciseCard.querySelector('#btn-check-build');
+  const selectedWords = [];
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (answered) return;
+      const word = chip.dataset.word;
+      const idx = parseInt(chip.dataset.index, 10);
+
+      if (chip.classList.contains('used')) {
+        // Remove from answer
+        chip.classList.remove('used');
+        const inAnswer = answerZone.querySelector(`[data-source-index="${idx}"]`);
+        if (inAnswer) inAnswer.remove();
+        const pos = selectedWords.indexOf(word);
+        if (pos > -1) selectedWords.splice(pos, 1);
+      } else {
+        // Add to answer
+        chip.classList.add('used');
+        selectedWords.push(word);
+        const answerChip = document.createElement('span');
+        answerChip.className = 'word-chip in-answer';
+        answerChip.textContent = word;
+        answerChip.dataset.sourceIndex = idx;
+        answerChip.addEventListener('click', () => {
+          if (answered) return;
+          answerChip.remove();
+          chip.classList.remove('used');
+          const pos = selectedWords.indexOf(word);
+          if (pos > -1) selectedWords.splice(pos, 1);
+          btnCheck.disabled = selectedWords.length === 0;
+        });
+        answerZone.appendChild(answerChip);
+      }
+
+      btnCheck.disabled = selectedWords.length === 0;
+    });
+  });
+
+  btnCheck.addEventListener('click', () => {
+    if (answered) return;
+    answered = true;
+    btnCheck.disabled = true;
+    btnCheck.classList.add('hidden');
+
+    const userAnswer = selectedWords.join('');
+    const correctAnswer = ex.correct_answer;
+    const isCorrect = userAnswer === correctAnswer;
+
+    // Record result
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
+
+    if (isCorrect) {
+      answerZone.classList.add('correct-zone');
+    } else {
+      answerZone.classList.add('incorrect-zone');
+    }
+
+    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex, userAnswer);
+    showNextButton();
+  });
+}
+
+// ── Listening ───────────────────────────────────────
+function renderListening(ex) {
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Listen and choose what you heard</p>
+    </div>
+    <div class="audio-controls">
+      <button class="btn-audio" id="btn-play-audio" title="Play audio">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+      </button>
+      <button class="btn-replay hidden" id="btn-replay">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        Replay
+      </button>
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (let i = 0; i < ex.options.length; i++) {
+    html += `<button class="btn-option" data-answer="${escAttr(ex.options[i])}" onclick="window.__selectOption(this)">${escHtml(ex.options[i])}</button>`;
+  }
+  html += `</div>`;
+  // Romaji reveal area — hidden until answered, shown via showListeningRomaji()
+  if (ex.romaji) {
+    html += `<div id="listening-romaji-slot" class="hidden" style="text-align:center; margin-top:1rem;">
+      <p class="japanese-text" style="font-size:1.5rem;">${escHtml(ex.japanese)}</p>
+      <p class="romaji-text visible">${escHtml(ex.romaji)}</p>
+    </div>`;
+  }
+  html += `<div id="explanation-slot"></div>`;
+  return html;
+}
+
+// ── Pronunciation ───────────────────────────────────
+function renderPronunciation(ex) {
+  const phase = getCurrentPhase();
+  const japaneseText = ex.japanese || ex.question;
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Read this aloud</p>
+      <p class="japanese-text">${escHtml(japaneseText)}</p>
+      ${romajiHtml(ex.romaji, phase)}
+    </div>
+    <div class="audio-controls">
+      <button class="btn-record" id="btn-record-audio" title="Record">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+      </button>
+      <div class="recording-indicator hidden" id="recording-indicator">
+        <span class="recording-dot"></span>
+        <span>Listening...</span>
+      </div>
+    </div>
+    <div class="pronunciation-result hidden" id="pronunciation-result">
+      <div class="label">Expected</div>
+      <p class="detected-text" style="color:var(--color-text);" id="pron-expected">${escHtml(japaneseText)}</p>
+      <div class="label">You said</div>
+      <p class="detected-text" id="pron-detected">--</p>
+      <div class="label" style="margin-top:0.5rem;">Match</div>
+      <p id="pron-match" style="font-weight:600;">--</p>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+  return html;
+}
+
+function setupPronunciation(ex) {
+  const btnRecord = exerciseCard.querySelector('#btn-record-audio');
+  const indicator = exerciseCard.querySelector('#recording-indicator');
+  const resultBox = exerciseCard.querySelector('#pronunciation-result');
+  const expected = ex.japanese || ex.question;
+
+  if (!SpeechRecognitionAPI) {
+    btnRecord.disabled = true;
+    resultBox.classList.remove('hidden');
+    exerciseCard.querySelector('#pron-detected').textContent = 'Speech recognition not supported in this browser.';
+    return;
+  }
+
+  btnRecord.addEventListener('click', () => {
+    if (answered) return;
+
+    if (isRecording && recognition) {
+      recognition.stop();
+      return;
+    }
+
+    recognition = new SpeechRecognitionAPI();
+    recognition.lang = 'ja-JP';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      isRecording = true;
+      btnRecord.classList.add('recording');
+      indicator.classList.remove('hidden');
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      const confidence = event.results[0][0].confidence;
+
+      resultBox.classList.remove('hidden');
+      exerciseCard.querySelector('#pron-detected').textContent = transcript;
+
+      // Simple similarity check
+      const similarity = computeSimilarity(expected, transcript);
+      const matchEl = exerciseCard.querySelector('#pron-match');
+      const detectedEl = exerciseCard.querySelector('#pron-detected');
+
+      let isCorrect;
+      if (similarity >= 0.8) {
+        matchEl.textContent = 'Excellent!';
+        matchEl.className = 'match-good';
+        detectedEl.className = 'detected-text match-good';
+        isCorrect = true;
+      } else if (similarity >= 0.5) {
+        matchEl.textContent = 'Close! Try again or continue.';
+        matchEl.className = 'match-partial';
+        detectedEl.className = 'detected-text match-partial';
+        isCorrect = true; // partial credit
+      } else {
+        matchEl.textContent = 'Try again';
+        matchEl.className = 'match-poor';
+        detectedEl.className = 'detected-text match-poor';
+        isCorrect = false;
+      }
+
+      answered = true;
+      sessionResults.push({ type: ex.type, correct: isCorrect });
+      recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
+      showNextButton();
+    };
+
+    recognition.onerror = (event) => {
+      isRecording = false;
+      btnRecord.classList.remove('recording');
+      indicator.classList.add('hidden');
+
+      resultBox.classList.remove('hidden');
+      const detectedEl = exerciseCard.querySelector('#pron-detected');
+      if (event.error === 'not-allowed') {
+        detectedEl.textContent = 'Microphone access denied. Please allow mic permissions.';
+      } else {
+        detectedEl.textContent = `Error: ${event.error}. Tap record to try again.`;
+      }
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      btnRecord.classList.remove('recording');
+      indicator.classList.add('hidden');
+    };
+
+    recognition.start();
+  });
+}
+
+function computeSimilarity(a, b) {
+  // Normalize: remove spaces, punctuation
+  const normalize = (s) => s.replace(/[\s、。！？!?\.,\s]/g, '');
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  if (na === nb) return 1;
+  if (na.length === 0 || nb.length === 0) return 0;
+
+  // Levenshtein-based similarity
+  const len = Math.max(na.length, nb.length);
+  const dist = levenshtein(na, nb);
+  return 1 - (dist / len);
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+// ── TTS ─────────────────────────────────────────────
+function initVoices() {
+  voices = speechSynthesis.getVoices();
+  const jaVoices = voices.filter(v => v.lang.startsWith('ja'));
+  if (jaVoices.length > 0) {
+    jaVoice = jaVoices[0];
+  }
+}
+
+if (typeof speechSynthesis !== 'undefined') {
+  speechSynthesis.onvoiceschanged = initVoices;
+  initVoices();
+}
+
+function speakJapanese(text) {
+  if (typeof speechSynthesis === 'undefined') return;
+  speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  utter.rate = 0.85;
+  if (jaVoice) utter.voice = jaVoice;
+
+  const playBtn = exerciseCard.querySelector('#btn-play-audio');
+  const replayBtn = exerciseCard.querySelector('#btn-replay');
+
+  if (playBtn) {
+    utter.onstart = () => playBtn.classList.add('speaking');
+    utter.onend = () => {
+      playBtn.classList.remove('speaking');
+      if (replayBtn) replayBtn.classList.remove('hidden');
+    };
+    utter.onerror = () => {
+      playBtn.classList.remove('speaking');
+      if (replayBtn) replayBtn.classList.remove('hidden');
+    };
+  }
+
+  speechSynthesis.speak(utter);
+}
+
+// ── Shared Option Handler ───────────────────────────
+window.__selectOption = function(btn) {
+  if (answered) return;
+  answered = true;
+
+  const optionsGrid = btn.closest('.options-grid');
+  const correctAnswer = optionsGrid ? optionsGrid.dataset.correct : '';
+  const userAnswer = btn.dataset.answer;
+  const isCorrect = userAnswer === correctAnswer;
+  const ex = exercises[currentIndex];
+
+  // Highlight selected button
+  btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+  // Disable all option buttons and reveal correct
+  if (optionsGrid) optionsGrid.classList.add('answered');
+  const allBtns = exerciseCard.querySelectorAll('.btn-option');
+  allBtns.forEach(b => {
+    b.disabled = true;
+    if (b.dataset.answer === correctAnswer && !isCorrect) {
+      b.classList.add('reveal-correct');
+    }
+  });
+
+  // Record result
+  sessionResults.push({ type: ex.type, correct: isCorrect });
+  recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
+
+  // Reveal listening romaji after answering
+  const listeningRomajiSlot = exerciseCard.querySelector('#listening-romaji-slot');
+  if (listeningRomajiSlot) {
+    listeningRomajiSlot.classList.remove('hidden');
+  }
+
+  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex, userAnswer);
+  showNextButton();
+};
+
+// ── Gemini API for mistake explanations ─────────────
+const GEMINI_API_KEY = 'AIzaSyCfApdhcWr6BfSyd7FwNTGB2yhI6m3fSac';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+async function getGeminiExplanation(exercise, userAnswer, correctAnswer) {
+  const ex = exercise;
+  const typeLabels = {
+    vocab_quiz: 'vocabulary',
+    grammar_fill: 'grammar (fill in the blank)',
+    sentence_build: 'sentence building',
+    reading: 'reading comprehension',
+    listening: 'listening comprehension',
+    pronunciation: 'pronunciation'
+  };
+
+  const prompt = `You are a Japanese language tutor helping a JLPT N5 student. They just got a question wrong. Explain WHY their answer was wrong and help them understand the correct answer. Be concise (2-3 sentences max), warm, and specific to their mistake. Use romaji alongside any Japanese.
+
+Exercise type: ${typeLabels[ex.type] || ex.type}
+Question: ${ex.question || ex.japanese || ex.passage || ''}
+Their answer: ${userAnswer}
+Correct answer: ${correctAnswer}
+${ex.explanation ? 'Context: ' + ex.explanation : ''}`;
+
+  try {
+    const res = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 500 }
+      })
+    });
+
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => 'unknown');
+      console.error('Gemini API error:', res.status, errorBody);
+      return null;
+    }
+    const data = await res.json();
+    console.log('Gemini response:', data);
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const textParts = parts.filter(p => !p.thought && p.text);
+    return textParts.length > 0 ? textParts[textParts.length - 1].text : null;
+  } catch (e) {
+    console.error('Gemini explanation failed:', e);
+    return null;
+  }
+}
+
+// ── Explanation ─────────────────────────────────────
+function showExplanation(isCorrect, explanation, correctAnswer, exercise, userAnswer) {
+  const slot = exerciseCard.querySelector('#explanation-slot');
+  if (!slot) return;
+
+  let html = `<div class="explanation-box">`;
+  html += `<strong style="color:${isCorrect ? 'var(--color-correct)' : 'var(--color-incorrect)'}">`;
+  html += isCorrect ? 'Correct!' : 'Incorrect';
+  html += `</strong>`;
+  if (!isCorrect && correctAnswer) {
+    html += `<br>The answer is: <strong class="jp">${escHtml(correctAnswer)}</strong>`;
+  }
+  if (explanation) {
+    html += `<br>${escHtml(explanation)}`;
+  }
+  html += `</div>`;
+
+  slot.innerHTML = html;
+
+  // For wrong answers, fetch a personalized explanation from Gemini
+  if (!isCorrect && exercise && userAnswer) {
+    const aiSlot = document.createElement('div');
+    aiSlot.className = 'explanation-box ai-explanation';
+    aiSlot.innerHTML = '<em style="color:var(--color-text-muted);">Getting personalized explanation...</em>';
+    slot.appendChild(aiSlot);
+
+    getGeminiExplanation(exercise, userAnswer, correctAnswer).then(aiText => {
+      if (aiText) {
+        aiSlot.innerHTML = `<strong style="color:var(--color-accent);">Sensei says:</strong><br>${escHtml(aiText)}`;
+      } else {
+        aiSlot.innerHTML = '<em style="color:var(--color-text-muted);">Could not load AI explanation. Check API key in console.</em>';
+      }
+    });
+  }
+}
+
+function showNextButton() {
+  // 1-second delay before enabling Next to prevent accidental double-tap
+  btnSkip.classList.add('hidden');
+  setTimeout(() => {
+    btnNext.classList.remove('hidden');
+    btnNext.disabled = false;
+  }, 1000);
+}
+
+// ── Navigation ──────────────────────────────────────
+function goToNextExercise() {
+  currentIndex++;
+  if (currentIndex >= exercises.length) {
+    finishSession();
+  } else {
+    renderExercise();
+  }
+}
+
+function skipExercise() {
+  const ex = exercises[currentIndex];
+  sessionResults.push({ type: ex.type, correct: false });
+  recordExerciseResult(ex.type, false, ex._vocabIndex, ex._grammarIndex);
+  currentIndex++;
+  if (currentIndex >= exercises.length) {
+    finishSession();
+  } else {
+    renderExercise();
+  }
+}
+
+// ── Session Complete ────────────────────────────────
+function finishSession() {
+  // Cancel any ongoing speech
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  if (isRecording && recognition) {
+    recognition.stop();
+    isRecording = false;
+  }
+
+  updateStatsAfterSession();
+
+  // Compute score
+  const total = sessionResults.length;
+  const correct = sessionResults.filter(r => r.correct).length;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  $('#score-num').textContent = correct;
+  $('#score-denom').textContent = `/ ${total}`;
+  $('#score-percent').textContent = `${pct}% correct`;
+
+  // Message
+  if (pct >= 90) {
+    $('#complete-message').textContent = 'Outstanding!';
+  } else if (pct >= 70) {
+    $('#complete-message').textContent = 'Great effort!';
+  } else if (pct >= 50) {
+    $('#complete-message').textContent = 'Keep practicing!';
+  } else {
+    $('#complete-message').textContent = 'Every attempt counts!';
+  }
+
+  // Breakdown by type
+  const byType = {};
+  for (const r of sessionResults) {
+    if (!byType[r.type]) byType[r.type] = { correct: 0, total: 0 };
+    byType[r.type].total++;
+    if (r.correct) byType[r.type].correct++;
+  }
+
+  const typeLabels = {
+    vocab_quiz: 'Vocabulary',
+    grammar_fill: 'Grammar',
+    sentence_build: 'Sentence Building',
+    reading: 'Reading',
+    listening: 'Listening',
+    pronunciation: 'Pronunciation'
+  };
+
+  const breakdownList = $('#breakdown-list');
+  breakdownList.innerHTML = '';
+
+  for (const [type, data] of Object.entries(byType)) {
+    const rate = data.total > 0 ? data.correct / data.total : 0;
+    const ratePct = Math.round(rate * 100);
+    let barClass = 'good';
+    if (rate < 0.5) barClass = 'poor';
+    else if (rate < 0.8) barClass = 'ok';
+
+    const li = document.createElement('li');
+    li.className = 'breakdown-item';
+    li.innerHTML = `
+      <span class="breakdown-type">${typeLabels[type] || type}</span>
+      <div class="breakdown-bar">
+        <div class="breakdown-bar-fill ${barClass}" style="width:${ratePct}%"></div>
+      </div>
+      <span class="breakdown-score">${data.correct}/${data.total}</span>
+    `;
+    breakdownList.appendChild(li);
+  }
+
+  // Update progress bar to 100%
+  progressFill.style.width = '100%';
+
+  showView('view-complete');
+}
+
+// ── Event Delegation for dynamic replay/play buttons ─
+exerciseCard.addEventListener('click', (e) => {
+  const playBtn = e.target.closest('#btn-play-audio');
+  const replayBtn = e.target.closest('#btn-replay');
+
+  if (playBtn) {
+    const ex = exercises[currentIndex];
+    speakJapanese(ex.japanese || ex.question);
+  }
+
+  if (replayBtn) {
+    const ex = exercises[currentIndex];
+    speakJapanese(ex.japanese || ex.question);
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// Event Listeners
+// ══════════════════════════════════════════════════════
+btnStartSession.addEventListener('click', () => {
+  if (!getActiveProfile()) return; // profile required
+  startSession();
+});
+
+btnNext.addEventListener('click', () => {
+  btnNext.classList.add('hidden');
+  goToNextExercise();
+});
+
+btnSkip.addEventListener('click', () => {
+  skipExercise();
+});
+
+btnPracticeAgain.addEventListener('click', () => {
+  startSession();
+});
+
+btnBackHome.addEventListener('click', () => {
+  renderStartScreen();
+  showView('view-start');
+});
+
+// ══════════════════════════════════════════════════════
+// Utility
+// ══════════════════════════════════════════════════════
+function escHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function escAttr(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ══════════════════════════════════════════════════════
+// Init
+// ══════════════════════════════════════════════════════
+renderStartScreen();
+renderLessonSelector();
+showView('view-start');
+
+</script>
+
+</body>
+</html>
