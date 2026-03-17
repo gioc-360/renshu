@@ -462,6 +462,110 @@
       border-color: var(--color-text);
     }
 
+    /* ── Mode Selector ───────────────────────────────── */
+    .mode-selector {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 1.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .mode-selector button {
+      background: none;
+      border: none;
+      font-family: var(--font-en);
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      padding: 0.25rem 0;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .mode-selector button.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-text);
+    }
+
+    /* ── Hiragana Intro Card ─────────────────────────── */
+    .kana-intro-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+      margin: 1.25rem 0;
+    }
+    .kana-intro-cell {
+      text-align: center;
+    }
+    .kana-intro-cell .kana-char {
+      font-family: var(--font-jp);
+      font-size: 2rem;
+      line-height: 1.3;
+      color: var(--color-text);
+    }
+    .kana-intro-cell .kana-romaji {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.05em;
+      margin-top: 0.15rem;
+    }
+
+    /* ── Hiragana Read Input ─────────────────────────── */
+    .read-input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      align-items: stretch;
+    }
+    .read-input-group input {
+      flex: 1;
+      font-size: 1.1rem;
+      font-family: var(--font-en);
+      padding: 0.6rem 0.75rem;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text);
+      outline: none;
+    }
+    .read-input-group input:focus {
+      border-bottom-color: var(--color-text);
+    }
+    .read-input-group input.input-correct {
+      border-bottom-color: var(--color-text);
+    }
+    .read-input-group input.input-incorrect {
+      border-bottom-color: var(--color-vermillion);
+    }
+    .read-input-group button {
+      font-size: 0.8rem;
+      font-family: var(--font-en);
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Character Breakdown ─────────────────────────── */
+    .char-breakdown {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    .char-breakdown span {
+      font-family: var(--font-jp);
+      font-size: 1.1rem;
+    }
+    .char-breakdown .romaji-sub {
+      font-family: var(--font-en);
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+
     /* ══════════════════════════════════════════════════
        SESSION VIEW
        ══════════════════════════════════════════════════ */
@@ -1458,9 +1562,21 @@
       </select>
     </div>
 
+    <div class="mode-selector" id="mode-selector">
+      <button id="btn-mode-learn" onclick="window.__setMode('learn')">Learn Hiragana</button>
+      <button id="btn-mode-practice" class="active" onclick="window.__setMode('practice')">Practice</button>
+    </div>
+
     <div class="lesson-selector" id="lesson-selector-container">
       <label for="lesson-select">Lesson</label>
       <select id="lesson-select">
+        <!-- Populated dynamically -->
+      </select>
+    </div>
+
+    <div class="lesson-selector hidden" id="group-selector-container">
+      <label for="group-select">Group</label>
+      <select id="group-select">
         <!-- Populated dynamically -->
       </select>
     </div>
@@ -1524,6 +1640,7 @@
 // Imports from external modules
 // ══════════════════════════════════════════════════════
 import n5Content from './src/data/n5-content.js';
+import hiraganaGroups from './src/data/hiragana-groups.js';
 
 // ══════════════════════════════════════════════════════
 // Exercise Generation (inline — lesson-aware Genki I curriculum)
@@ -1994,6 +2111,7 @@ let exercises = [];       // array of exercises for the current session
 let answered = false;     // whether the current exercise has been answered
 let sessionResults = [];  // array of { type, correct } for each answered exercise
 let reinforceQueue = [];  // wrong items to reinforce later in session
+let currentMode = 'practice'; // 'practice' or 'learn'
 
 // TTS
 let voices = [];
@@ -2315,6 +2433,11 @@ function renderProgressionSection() {
     return;
   }
 
+  if (currentMode === 'learn') {
+    renderLearningProgression(section);
+    return;
+  }
+
   const history = loadSkillHistory();
   const lessons = n5Content.lessons;
   const currentLessonIdx = history.currentLesson || 0;
@@ -2382,6 +2505,57 @@ function renderProgressionSection() {
   }
 }
 
+function renderLearningProgression(section) {
+  const history = loadSkillHistory();
+  const groupIdx = history.currentGroup || 0;
+  const group = hiraganaGroups[groupIdx];
+
+  // Count total characters learned
+  let totalChars = 0;
+  for (let i = 0; i <= groupIdx; i++) {
+    totalChars += hiraganaGroups[i].characters.length;
+  }
+  const allChars = hiraganaGroups.reduce((sum, g) => sum + g.characters.length, 0);
+  const charPct = Math.round((totalChars / allChars) * 100);
+
+  const groupPct = Math.round(((groupIdx + 1) / hiraganaGroups.length) * 100);
+
+  section.innerHTML = `
+    <div class="progression-card">
+      <h4>Hiragana Progress</h4>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Current Group</span>
+          <span class="prog-count">Group ${group.id}: ${escHtml(group.name)} (${group.characters.length} characters)</span>
+        </div>
+      </div>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Characters</span>
+          <span class="prog-count">${totalChars} / ${allChars}</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${charPct}%"></div>
+        </div>
+      </div>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Groups</span>
+          <span class="prog-count">${groupIdx + 1} / ${hiraganaGroups.length}</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${groupPct}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const indicator = $('#lesson-indicator');
+  if (indicator) {
+    indicator.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
+  }
+}
+
 function renderLessonSelector() {
   const select = document.getElementById('lesson-select');
   if (!select) return;
@@ -2416,13 +2590,80 @@ function renderStartScreen() {
   $('#stat-weakest').textContent = getWeakestSkill();
   renderProgressionSection();
   renderLessonSelector();
+  renderGroupSelector();
+  updateModeUI();
+}
+
+// ── Mode switching ──────────────────────────────────
+window.__setMode = function(mode) {
+  currentMode = mode;
+  updateModeUI();
+  renderProgressionSection();
+};
+
+function updateModeUI() {
+  const btnLearn = $('#btn-mode-learn');
+  const btnPractice = $('#btn-mode-practice');
+  const lessonContainer = $('#lesson-selector-container');
+  const groupContainer = $('#group-selector-container');
+  const indicator = $('#lesson-indicator');
+  const levelBadge = $('#level-badge');
+
+  btnLearn.classList.toggle('active', currentMode === 'learn');
+  btnPractice.classList.toggle('active', currentMode === 'practice');
+
+  if (currentMode === 'learn') {
+    lessonContainer.classList.add('hidden');
+    groupContainer.classList.remove('hidden');
+    if (indicator) {
+      const history = loadSkillHistory();
+      const groupIdx = history.currentGroup || 0;
+      const group = hiraganaGroups[groupIdx];
+      indicator.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
+    }
+    if (levelBadge) levelBadge.textContent = 'ひらがな';
+  } else {
+    lessonContainer.classList.remove('hidden');
+    groupContainer.classList.add('hidden');
+    if (levelBadge) levelBadge.textContent = 'N5';
+    // lesson indicator updated by renderProgressionSection
+  }
+}
+
+function renderGroupSelector() {
+  const select = document.getElementById('group-select');
+  if (!select) return;
+  const history = loadSkillHistory();
+  const currentGroup = history.currentGroup || 0;
+
+  select.innerHTML = '';
+  hiraganaGroups.forEach((group, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Group ${group.id}: ${group.name}`;
+    if (i === currentGroup) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.onchange = function() {
+    const history = loadSkillHistory();
+    history.currentGroup = parseInt(this.value, 10);
+    saveSkillHistory(history);
+    renderStartScreen();
+  };
 }
 
 // ══════════════════════════════════════════════════════
 // Session Logic
 // ══════════════════════════════════════════════════════
 async function startSession() {
-  exercises = generateExercises(n5Content, 13);
+  if (currentMode === 'learn') {
+    const history = loadSkillHistory();
+    const groupIdx = history.currentGroup || 0;
+    exercises = generateLearningSession(groupIdx);
+  } else {
+    exercises = generateExercises(n5Content, 13);
+  }
   currentIndex = 0;
   sessionResults = [];
   answered = false;
@@ -2433,6 +2674,106 @@ async function startSession() {
 
   showView('view-session');
   renderExercise();
+}
+
+// ── Learning Session Generation ─────────────────────
+function getWordsUpToGroup(groupIdx) {
+  const words = [];
+  for (let i = 0; i <= groupIdx && i < hiraganaGroups.length; i++) {
+    for (const w of hiraganaGroups[i].words) {
+      words.push({ ...w, _groupIdx: i });
+    }
+  }
+  return words;
+}
+
+function normalizeRomaji(input) {
+  let s = input.toLowerCase().trim();
+  // Accept common alternative romanizations
+  s = s.replace(/si/g, 'shi');
+  s = s.replace(/ti/g, 'chi');
+  s = s.replace(/tu/g, 'tsu');
+  s = s.replace(/hu/g, 'fu');
+  s = s.replace(/sy/g, 'sh');
+  s = s.replace(/ty/g, 'ch');
+  s = s.replace(/nb/g, 'mb');
+  s = s.replace(/np/g, 'mp');
+  return s;
+}
+
+function generateLearningSession(groupIdx) {
+  const group = hiraganaGroups[groupIdx];
+  const allWords = getWordsUpToGroup(groupIdx);
+  const currentGroupWords = group.words;
+  const exerciseList = [];
+
+  // 1. Intro card (always first)
+  exerciseList.push({
+    type: 'hiragana_intro',
+    groupName: group.name,
+    groupId: group.id,
+    characters: group.characters,
+    _isIntro: true,
+  });
+
+  // 2. Build exercises — mix of "read" and "spot"
+  // Prioritize current group words, mix in some from previous groups
+  const targetCount = Math.min(10, allWords.length * 2);
+
+  // Each current group word gets at least one "read" exercise
+  for (const word of currentGroupWords) {
+    exerciseList.push(makeHiraganaRead(word));
+  }
+
+  // Add "spot" exercises for current group words
+  for (const word of currentGroupWords) {
+    if (allWords.length >= 4) {
+      exerciseList.push(makeHiraganaSpot(word, allWords));
+    }
+  }
+
+  // Fill remaining with review words from previous groups (if any)
+  const prevWords = allWords.filter(w => w._groupIdx < groupIdx);
+  if (prevWords.length > 0) {
+    const reviewPicks = pickN(prevWords, Math.min(4, prevWords.length));
+    for (const word of reviewPicks) {
+      exerciseList.push(Math.random() < 0.5
+        ? makeHiraganaRead(word)
+        : (allWords.length >= 4 ? makeHiraganaSpot(word, allWords) : makeHiraganaRead(word))
+      );
+    }
+  }
+
+  // Shuffle exercises (but keep intro first)
+  const intro = exerciseList.shift();
+  const shuffled = shuffle(exerciseList).slice(0, targetCount);
+  return [intro, ...shuffled];
+}
+
+function makeHiraganaRead(word) {
+  return {
+    type: 'hiragana_read',
+    japanese: word.kana,
+    correct_answer: word.romaji,
+    english: word.english,
+    breakdown: word.breakdown,
+    explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+  };
+}
+
+function makeHiraganaSpot(word, allWords) {
+  const others = allWords.filter(w => w.kana !== word.kana);
+  const distractors = pickN(others, 3).map(w => w.kana);
+  const options = shuffle([word.kana, ...distractors]);
+  return {
+    type: 'hiragana_spot',
+    english: word.english,
+    romaji: word.romaji,
+    correct_answer: word.kana,
+    options,
+    breakdown: word.breakdown,
+    explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+  };
 }
 
 function renderExercise() {
@@ -2474,7 +2815,9 @@ function renderExerciseContent(ex) {
     sentence_build: 'Sentence Building',
     reading: 'Reading',
     listening: 'Listening',
-    pronunciation: 'Pronunciation'
+    pronunciation: 'Pronunciation',
+    hiragana_read: 'Read It',
+    hiragana_spot: 'Spot It',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -2498,6 +2841,15 @@ function renderExerciseContent(ex) {
     case 'pronunciation':
       html += renderPronunciation(ex);
       break;
+    case 'hiragana_intro':
+      html += renderHiraganaIntro(ex);
+      break;
+    case 'hiragana_read':
+      html += renderHiraganaRead(ex);
+      break;
+    case 'hiragana_spot':
+      html += renderHiraganaSpot(ex);
+      break;
     default:
       html += `<p>Unknown exercise type: ${type}</p>`;
   }
@@ -2505,7 +2857,11 @@ function renderExerciseContent(ex) {
   exerciseCard.innerHTML = html;
 
   // Post-render setup
-  if (type === 'sentence_build') {
+  if (type === 'hiragana_intro') {
+    setupHiraganaIntro(ex);
+  } else if (type === 'hiragana_read') {
+    setupHiraganaRead(ex);
+  } else if (type === 'sentence_build') {
     setupSentenceBuild(ex);
   } else if (type === 'listening') {
     // Auto-play audio after short delay
@@ -2513,6 +2869,100 @@ function renderExerciseContent(ex) {
   } else if (type === 'pronunciation') {
     setupPronunciation(ex);
   }
+}
+
+// ── Hiragana Intro ─────────────────────────────────
+function renderHiraganaIntro(ex) {
+  let gridHtml = '';
+  for (const ch of ex.characters) {
+    gridHtml += `<div class="kana-intro-cell"><div class="kana-char">${ch.kana}</div><div class="kana-romaji">${ch.romaji}</div></div>`;
+  }
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction" style="margin-bottom:0.25rem;">Group ${ex.groupId}: ${escHtml(ex.groupName)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:0.5rem;">Study these characters. You'll read words with them next.</p>
+      <div class="kana-intro-grid">${gridHtml}</div>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupHiraganaIntro(ex) {
+  // Auto-advance: mark as seen, user clicks the action button to continue
+  answered = true;
+  btnAction.textContent = 'Begin';
+  btnAction.classList.remove('btn-skip-state');
+  btnAction.classList.add('btn-next-state');
+  btnAction.disabled = false;
+}
+
+// ── Hiragana Read ──────────────────────────────────
+function renderHiraganaRead(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">What does this say?</p>
+      <p class="japanese-text">${escHtml(ex.japanese)}</p>
+    </div>
+    <div class="read-input-group">
+      <input type="text" id="read-input" placeholder="Type romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <button id="read-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupHiraganaRead(ex) {
+  const input = exerciseCard.querySelector('#read-input');
+  const checkBtn = exerciseCard.querySelector('#read-check');
+  if (!input || !checkBtn) return;
+
+  // Focus input
+  setTimeout(() => input.focus(), 300);
+
+  function checkAnswer() {
+    if (answered) return;
+    const userAnswer = normalizeRomaji(input.value);
+    const correct = normalizeRomaji(ex.correct_answer);
+    const isCorrect = userAnswer === correct;
+
+    answered = true;
+    input.disabled = true;
+    checkBtn.disabled = true;
+    input.classList.add(isCorrect ? 'input-correct' : 'input-incorrect');
+
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect);
+
+    if (!isCorrect) {
+      reinforceQueue.push(ex);
+    }
+
+    // Build breakdown explanation
+    let breakdownHtml = ex.breakdown.map(b => `${b.char}(${b.romaji})`).join(' + ');
+    showExplanation(isCorrect, breakdownHtml + ` = ${ex.correct_answer} = "${ex.english}"`, isCorrect ? null : ex.correct_answer, ex);
+    showNextButton(isCorrect);
+  }
+
+  checkBtn.addEventListener('click', checkAnswer);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkAnswer();
+  });
+}
+
+// ── Hiragana Spot ──────────────────────────────────
+function renderHiraganaSpot(ex) {
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Which word means "${escHtml(ex.english)}"?</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted);">${escHtml(ex.romaji)}</p>
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (const opt of ex.options) {
+    html += `<button class="btn-option jp" data-answer="${escAttr(opt)}" onclick="window.__selectOption(this)">${escHtml(opt)}</button>`;
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
 }
 
 // ── Vocab Quiz ──────────────────────────────────────
@@ -3145,7 +3595,9 @@ function finishSession() {
     sentence_build: 'Sentence Building',
     reading: 'Reading',
     listening: 'Listening',
-    pronunciation: 'Pronunciation'
+    pronunciation: 'Pronunciation',
+    hiragana_read: 'Read It',
+    hiragana_spot: 'Spot It',
   };
 
   const breakdownList = $('#breakdown-list');
