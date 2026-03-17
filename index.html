@@ -2615,7 +2615,7 @@ function setupSentenceBuild(ex) {
       answerZone.classList.add('incorrect-zone');
     }
 
-    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
+    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex);
     showNextButton();
   });
 }
@@ -2921,16 +2921,23 @@ window.__selectOption = function(btn) {
     listeningRomajiSlot.classList.remove('hidden');
   }
 
-  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
+  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex);
   showNextButton();
 };
 
 // ── Explanation ─────────────────────────────────────
-function showExplanation(isCorrect, explanation, correctAnswer) {
+function showExplanation(isCorrect, explanation, correctAnswer, exercise) {
+  const ex = exercise || {};
+  const romaji = ex.romaji || null;
+  const japanese = ex.japanese || ex.question || ex.passage || '';
+
   let html = `<div class="explanation-box">`;
   html += `<strong style="color:${isCorrect ? 'var(--color-correct)' : 'var(--color-incorrect)'}">`;
   html += isCorrect ? 'Correct!' : 'Incorrect';
   html += `</strong>`;
+  if (japanese && romaji) {
+    html += `<br><span class="jp">${escHtml(japanese)}</span> <span style="color:var(--color-text-muted);">(${escHtml(romaji)})</span>`;
+  }
   if (!isCorrect && correctAnswer) {
     html += `<br>The answer is: <strong class="jp">${escHtml(correctAnswer)}</strong>`;
   }
@@ -2939,17 +2946,19 @@ function showExplanation(isCorrect, explanation, correctAnswer) {
   }
   html += `</div>`;
 
-  // Append to review log below the sticky footer
+  // Prepend to review log (most recent on top)
   const log = document.getElementById('session-review-log');
   if (log) {
-    if (log.children.length > 0) {
-      const divider = document.createElement('hr');
-      divider.style.cssText = 'border:none;border-top:1px solid var(--color-border-light);margin:0.75rem 0;';
-      log.appendChild(divider);
-    }
     const entry = document.createElement('div');
     entry.innerHTML = html;
-    log.appendChild(entry);
+    if (log.children.length > 0) {
+      const divider = document.createElement('hr');
+      divider.style.cssText = 'border:none;border-top:1px solid var(--color-border-light);margin:0.5rem 0;opacity:0.5;';
+      entry.appendChild(divider);
+      log.insertBefore(entry, log.firstChild);
+    } else {
+      log.appendChild(entry);
+    }
   }
 }
 
