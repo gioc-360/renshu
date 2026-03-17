@@ -411,10 +411,10 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I am a student.", words: ["わたしは", "がくせい", "です"], correct_answer: "わたしはがくせいです", explanation: "Topic (わたしは) + noun (がくせい) + copula (です)" },
-        { english: "My major is Japanese.", words: ["にほんご", "せんこうは", "です"], correct_answer: "せんこうはにほんごです", explanation: "Topic (せんこうは) + noun (にほんご) + copula (です)" },
-        { english: "It is 3 o'clock now.", words: ["さんじ", "いま", "です"], correct_answer: "いまさんじです", explanation: "Time word (いま) + time (さんじ) + copula (です)" },
-        { english: "Are you a student?", words: ["がくせい", "ですか"], correct_answer: "がくせいですか", explanation: "Noun (がくせい) + question copula (ですか)" },
+        { english: "I am a student.", words: ["わたしは", "がくせい", "です"], correct_answer: "わたしはがくせいです", explanation: "わたしは (watashi wa — 'I' + topic marker) → がくせい (gakusei — 'student') → です (desu — 'am'). Japanese puts 'am' at the end." },
+        { english: "My major is Japanese.", words: ["にほんご", "せんこうは", "です"], correct_answer: "せんこうはにほんごです", explanation: "せんこうは (senkou wa — 'major' + topic marker) → にほんご (nihongo — 'Japanese') → です (desu — 'is'). The topic marker は goes after what you're talking about." },
+        { english: "It is 3 o'clock now.", words: ["さんじ", "いま", "です"], correct_answer: "いまさんじです", explanation: "いま (ima — 'now') → さんじ (sanji — '3 o'clock') → です (desu — 'is'). Time words go at the beginning." },
+        { english: "Are you a student?", words: ["がくせい", "ですか"], correct_answer: "がくせいですか", explanation: "がくせい (gakusei — 'student') → ですか (desu ka — 'are you?'). Adding か to the end turns any sentence into a question." },
       ],
     },
 
@@ -500,10 +500,10 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "This is a book.", words: ["ほん", "これは", "です"], correct_answer: "これはほんです", explanation: "Topic (これは) + noun (ほん) + copula (です)" },
-        { english: "What is that?", words: ["なん", "それは", "ですか"], correct_answer: "それはなんですか", explanation: "Topic (それは) + question word (なん) + question copula (ですか)" },
-        { english: "How much is this bag?", words: ["いくら", "このかばんは", "ですか"], correct_answer: "このかばんはいくらですか", explanation: "Topic (このかばんは) + question (いくら) + ですか" },
-        { english: "This is not a pen.", words: ["ペン", "これは", "じゃないです"], correct_answer: "これはペンじゃないです", explanation: "Topic (これは) + noun (ペン) + negative copula (じゃないです)" },
+        { english: "This is a book.", words: ["ほん", "これは", "です"], correct_answer: "これはほんです", explanation: "これは (kore wa — 'this' + topic marker) → ほん (hon — 'book') → です (desu — 'is'). Pattern: [thing]は [what it is] です." },
+        { english: "What is that?", words: ["なん", "それは", "ですか"], correct_answer: "それはなんですか", explanation: "それは (sore wa — 'that' + topic marker) → なん (nan — 'what') → ですか (desu ka — 'is?'). The question word goes where the answer would go." },
+        { english: "How much is this bag?", words: ["いくら", "このかばんは", "ですか"], correct_answer: "このかばんはいくらですか", explanation: "このかばんは (kono kaban wa — 'this bag' + topic marker) → いくら (ikura — 'how much') → ですか (desu ka — 'is?'). この means 'this' and must go before a noun." },
+        { english: "This is not a pen.", words: ["ペン", "これは", "じゃないです"], correct_answer: "これはペンじゃないです", explanation: "これは (kore wa — 'this' + topic marker) → ペン (pen — 'pen') → じゃないです (ja nai desu — 'is not'). じゃないです is the negative of です." },
       ],
     },
 
@@ -597,11 +597,11 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I eat rice.", words: ["ごはんを", "たべます"], correct_answer: "ごはんをたべます", explanation: "Object を + verb" },
-        { english: "I go to school.", words: ["がっこうに", "いきます"], correct_answer: "がっこうにいきます", explanation: "Destination に + movement verb" },
-        { english: "I drink water.", words: ["みずを", "のみます"], correct_answer: "みずをのみます", explanation: "Object を + verb" },
-        { english: "I study Japanese every day.", words: ["にほんごを", "まいにち", "べんきょうします"], correct_answer: "まいにちにほんごをべんきょうします", explanation: "Time + object を + verb" },
-        { english: "Won't you have some coffee?", words: ["コーヒーを", "のみませんか"], correct_answer: "コーヒーをのみませんか", explanation: "Object を + negative question (suggestion)" },
+        { english: "I eat rice.", words: ["ごはんを", "たべます"], correct_answer: "ごはんをたべます", explanation: "ごはんを (gohan wo — 'rice' + object marker) → たべます (tabemasu — 'eat'). を marks what you eat. The verb always goes last." },
+        { english: "I go to school.", words: ["がっこうに", "いきます"], correct_answer: "がっこうにいきます", explanation: "がっこうに (gakkou ni — 'school' + direction marker) → いきます (ikimasu — 'go'). に marks where you're going." },
+        { english: "I drink water.", words: ["みずを", "のみます"], correct_answer: "みずをのみます", explanation: "みずを (mizu wo — 'water' + object marker) → のみます (nomimasu — 'drink'). Same pattern: [thing]を [verb]." },
+        { english: "I study Japanese every day.", words: ["にほんごを", "まいにち", "べんきょうします"], correct_answer: "まいにちにほんごをべんきょうします", explanation: "まいにち (mainichi — 'every day') → にほんごを (nihongo wo — 'Japanese' + object marker) → べんきょうします (benkyou shimasu — 'study'). Time goes first, then what you do." },
+        { english: "Won't you have some coffee?", words: ["コーヒーを", "のみませんか"], correct_answer: "コーヒーをのみませんか", explanation: "コーヒーを (koohii wo — 'coffee' + object marker) → のみませんか (nomimasen ka — 'won't you drink?'). ませんか is a polite way to invite someone." },
       ],
     },
 
@@ -688,10 +688,10 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "There is a book on the desk.", words: ["つくえのうえに", "ほんが", "あります"], correct_answer: "つくえのうえにほんがあります", explanation: "Location に + subject が + あります" },
-        { english: "I ate rice.", words: ["ごはんを", "たべました"], correct_answer: "ごはんをたべました", explanation: "Object を + past verb (ました)" },
-        { english: "There is a cat under the chair.", words: ["いすのしたに", "ねこが", "います"], correct_answer: "いすのしたにねこがいます", explanation: "Location に + subject が + います (animate)" },
-        { english: "I did not watch TV.", words: ["テレビを", "みませんでした"], correct_answer: "テレビをみませんでした", explanation: "Object を + negative past verb (ませんでした)" },
+        { english: "There is a book on the desk.", words: ["つくえのうえに", "ほんが", "あります"], correct_answer: "つくえのうえにほんがあります", explanation: "つくえのうえに (tsukue no ue ni — 'on the desk' + location marker) → ほんが (hon ga — 'book' + subject marker) → あります (arimasu — 'exists'). あります is for non-living things. が marks what exists." },
+        { english: "I ate rice.", words: ["ごはんを", "たべました"], correct_answer: "ごはんをたべました", explanation: "ごはんを (gohan wo — 'rice' + object marker) → たべました (tabemashita — 'ate'). ました makes any verb past tense." },
+        { english: "There is a cat under the chair.", words: ["いすのしたに", "ねこが", "います"], correct_answer: "いすのしたにねこがいます", explanation: "いすのしたに (isu no shita ni — 'under the chair' + location marker) → ねこが (neko ga — 'cat' + subject marker) → います (imasu — 'exists'). います is for living things (cats, people)." },
+        { english: "I did not watch TV.", words: ["テレビを", "みませんでした"], correct_answer: "テレビをみませんでした", explanation: "テレビを (terebi wo — 'TV' + object marker) → みませんでした (mimasen deshita — 'did not watch'). ませんでした = past tense negative." },
       ],
     },
 
@@ -762,10 +762,10 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I like sushi.", words: ["おすしが", "すきです"], correct_answer: "おすしがすきです", explanation: "Object が + すきです" },
-        { english: "This book is interesting.", words: ["おもしろいです", "このほんは"], correct_answer: "このほんはおもしろいです", explanation: "Topic は + い-adjective + です" },
-        { english: "The weather is good.", words: ["いいです", "てんきは"], correct_answer: "てんきはいいです", explanation: "Topic は + い-adjective + です" },
-        { english: "Japanese is difficult.", words: ["むずかしいです", "にほんごは"], correct_answer: "にほんごはむずかしいです", explanation: "Topic は + い-adjective + です" },
+        { english: "I like sushi.", words: ["おすしが", "すきです"], correct_answer: "おすしがすきです", explanation: "おすしが (osushi ga — 'sushi' + subject marker) → すきです (suki desu — 'like'). With すき (like) and きらい (dislike), が marks the thing you like, not を." },
+        { english: "This book is interesting.", words: ["おもしろいです", "このほんは"], correct_answer: "このほんはおもしろいです", explanation: "このほんは (kono hon wa — 'this book' + topic marker) → おもしろいです (omoshiroi desu — 'is interesting'). Adjectives ending in い go right before です." },
+        { english: "The weather is good.", words: ["いいです", "てんきは"], correct_answer: "てんきはいいです", explanation: "てんきは (tenki wa — 'weather' + topic marker) → いいです (ii desu — 'is good'). Same pattern: [topic]は [adjective]です." },
+        { english: "Japanese is difficult.", words: ["むずかしいです", "にほんごは"], correct_answer: "にほんごはむずかしいです", explanation: "にほんごは (nihongo wa — 'Japanese' + topic marker) → むずかしいです (muzukashii desu — 'is difficult'). The topic always comes first, the description always comes last." },
       ],
     },
 
@@ -852,10 +852,10 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "Please open the window.", words: ["まどを", "あけてください"], correct_answer: "まどをあけてください", explanation: "Object を + てください (request)" },
-        { english: "May I take a photo?", words: ["しゃしんを", "とってもいいですか"], correct_answer: "しゃしんをとってもいいですか", explanation: "Object を + てもいいですか (permission)" },
-        { english: "You must not eat here.", words: ["ここで", "たべてはいけません"], correct_answer: "ここでたべてはいけません", explanation: "Place で + てはいけません (prohibition)" },
-        { english: "Please turn off the light.", words: ["でんきを", "けしてください"], correct_answer: "でんきをけしてください", explanation: "Object を + てください (request)" },
+        { english: "Please open the window.", words: ["まどを", "あけてください"], correct_answer: "まどをあけてください", explanation: "まどを (mado wo — 'window' + object marker) → あけてください (akete kudasai — 'please open'). てください is how you make polite requests." },
+        { english: "May I take a photo?", words: ["しゃしんを", "とってもいいですか"], correct_answer: "しゃしんをとってもいいですか", explanation: "しゃしんを (shashin wo — 'photo' + object marker) → とってもいいですか (totte mo ii desu ka — 'is it okay to take?'). てもいいですか is how you ask permission." },
+        { english: "You must not eat here.", words: ["ここで", "たべてはいけません"], correct_answer: "ここでたべてはいけません", explanation: "ここで (koko de — 'here' + location marker for actions) → たべてはいけません (tabete wa ikemasen — 'must not eat'). てはいけません means something is not allowed." },
+        { english: "Please turn off the light.", words: ["でんきを", "けしてください"], correct_answer: "でんきをけしてください", explanation: "でんきを (denki wo — 'light' + object marker) → けしてください (keshite kudasai — 'please turn off'). Same pattern as 'please open': [thing]を [verb]てください." },
       ],
     },
 
@@ -921,8 +921,8 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I am studying right now.", words: ["いま", "べんきょうしています"], correct_answer: "いまべんきょうしています", explanation: "Time + ている (progressive)" },
-        { english: "I live in Tokyo.", words: ["とうきょうに", "すんでいます"], correct_answer: "とうきょうにすんでいます", explanation: "Place に + ている (resultant state)" },
+        { english: "I am studying right now.", words: ["いま", "べんきょうしています"], correct_answer: "いまべんきょうしています", explanation: "いま (ima — 'right now') → べんきょうしています (benkyou shite imasu — 'am studying'). ています means an action is happening right now, like English '-ing.'" },
+        { english: "I live in Tokyo.", words: ["とうきょうに", "すんでいます"], correct_answer: "とうきょうにすんでいます", explanation: "とうきょうに (toukyou ni — 'in Tokyo' + location marker) → すんでいます (sunde imasu — 'am living'). Some verbs use ています for ongoing states, not just actions in progress." },
       ],
     },
 
@@ -986,8 +986,8 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I think it will rain tomorrow.", words: ["あしたあめがふると", "おもいます"], correct_answer: "あしたあめがふるとおもいます", explanation: "Short form + と思います (opinion)" },
-        { english: "I think Japanese is interesting.", words: ["にほんごはおもしろいと", "おもいます"], correct_answer: "にほんごはおもしろいとおもいます", explanation: "Short form + と思います (opinion)" },
+        { english: "I think it will rain tomorrow.", words: ["あしたあめがふると", "おもいます"], correct_answer: "あしたあめがふるとおもいます", explanation: "あしたあめがふると (ashita ame ga furu to — 'tomorrow rain will fall' + quotation marker) → おもいます (omoimasu — 'I think'). と connects what you think to おもいます. The thought goes first." },
+        { english: "I think Japanese is interesting.", words: ["にほんごはおもしろいと", "おもいます"], correct_answer: "にほんごはおもしろいとおもいます", explanation: "にほんごはおもしろいと (nihongo wa omoshiroi to — 'Japanese is interesting' + quotation marker) → おもいます (omoimasu — 'I think'). Same pattern: [your opinion]とおもいます." },
       ],
     },
 
@@ -1042,7 +1042,7 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I haven't eaten lunch yet.", words: ["まだ", "ひるごはんを", "たべていません"], correct_answer: "まだひるごはんをたべていません", explanation: "まだ + object を + ていません" },
+        { english: "I haven't eaten lunch yet.", words: ["まだ", "ひるごはんを", "たべていません"], correct_answer: "まだひるごはんをたべていません", explanation: "まだ (mada — 'not yet') → ひるごはんを (hirugohan wo — 'lunch' + object marker) → たべていません (tabete imasen — 'haven't eaten'). まだ + ていません = 'haven't done something yet.'" },
       ],
     },
 
@@ -1104,7 +1104,7 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I intend to study tomorrow.", words: ["あした", "べんきょうする", "つもりです"], correct_answer: "あしたべんきょうするつもりです", explanation: "Time + short form + つもりです (intention)" },
+        { english: "I intend to study tomorrow.", words: ["あした", "べんきょうする", "つもりです"], correct_answer: "あしたべんきょうするつもりです", explanation: "あした (ashita — 'tomorrow') → べんきょうする (benkyou suru — 'study', casual form) → つもりです (tsumori desu — 'intend to'). つもりです expresses a plan you've decided on." },
       ],
     },
 
@@ -1166,8 +1166,8 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "I want to go to Japan.", words: ["にほんに", "いきたいです"], correct_answer: "にほんにいきたいです", explanation: "Destination に + verb stem + たいです" },
-        { english: "I have eaten sushi before.", words: ["すしを", "たべたことが", "あります"], correct_answer: "すしをたべたことがあります", explanation: "Object を + past short form + ことがあります" },
+        { english: "I want to go to Japan.", words: ["にほんに", "いきたいです"], correct_answer: "にほんにいきたいです", explanation: "にほんに (nihon ni — 'to Japan' + direction marker) → いきたいです (ikitai desu — 'want to go'). たい on a verb stem = 'want to.' Like adding 'want to' before any verb." },
+        { english: "I have eaten sushi before.", words: ["すしを", "たべたことが", "あります"], correct_answer: "すしをたべたことがあります", explanation: "すしを (sushi wo — 'sushi' + object marker) → たべたことが (tabeta koto ga — 'the experience of having eaten') → あります (arimasu — 'exists'). ことがあります literally means 'the experience exists.'" },
       ],
     },
 
@@ -1237,8 +1237,8 @@ const n5Content = {
       ],
 
       sentenceBuilds: [
-        { english: "You'd better take medicine.", words: ["くすりを", "のんだほうが", "いいです"], correct_answer: "くすりをのんだほうがいいです", explanation: "Object を + past form + ほうがいいです (advice)" },
-        { english: "I ate too much.", words: ["たべ", "すぎました"], correct_answer: "たべすぎました", explanation: "Verb stem + すぎました (too much)" },
+        { english: "You'd better take medicine.", words: ["くすりを", "のんだほうが", "いいです"], correct_answer: "くすりをのんだほうがいいです", explanation: "くすりを (kusuri wo — 'medicine' + object marker) → のんだほうが (nonda hou ga — 'the option of having taken') → いいです (ii desu — 'is good'). ほうがいいです literally means 'the direction of doing X is better.'" },
+        { english: "I ate too much.", words: ["たべ", "すぎました"], correct_answer: "たべすぎました", explanation: "たべ (tabe — 'eat', verb stem) → すぎました (sugimashita — 'did too much'). すぎる attaches to a verb stem and means 'overdid it.' のみすぎ = drank too much, はなしすぎ = talked too much." },
       ],
     },
   ],
