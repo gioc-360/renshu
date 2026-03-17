@@ -532,7 +532,7 @@
 
     .exercise-prompt .japanese-text {
       font-family: var(--font-jp);
-      font-size: 2.5rem;
+      font-size: 1.75rem;
       font-weight: 400;
       color: var(--color-text);
       line-height: 1.5;
@@ -540,7 +540,7 @@
     }
 
     .exercise-prompt .english-text {
-      font-size: 1.125rem;
+      font-size: 1rem;
       color: var(--color-text);
       line-height: 1.6;
     }
@@ -561,7 +561,7 @@
 
     .exercise-prompt .sentence-with-blank {
       font-family: var(--font-jp);
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       font-weight: 400;
       color: var(--color-text);
       line-height: 1.8;
@@ -1057,7 +1057,7 @@
       }
 
       .exercise-prompt .japanese-text {
-        font-size: 3.5rem;
+        font-size: 2rem;
       }
 
       .card {
@@ -2708,7 +2708,7 @@ function renderListening(ex) {
   // Romaji reveal area — hidden until answered, shown via showListeningRomaji()
   if (ex.romaji) {
     html += `<div id="listening-romaji-slot" class="hidden" style="text-align:center; margin-top:1rem;">
-      <p class="japanese-text" style="font-size:1.5rem;">${escHtml(ex.japanese)}</p>
+      <p class="japanese-text">${escHtml(ex.japanese)}</p>
       <p class="romaji-text visible">${escHtml(ex.romaji)}</p>
     </div>`;
   }
@@ -2750,6 +2750,7 @@ function renderPronunciation(ex) {
       <div class="label" style="margin-top:0.5rem;">Match</div>
       <p id="pron-match" style="font-weight:600;">--</p>
     </div>
+    <button class="btn-small hidden" id="btn-hear-correct" style="margin-top:0.5rem;">Hear correct pronunciation</button>
     <div id="explanation-slot"></div>
   `;
   return html;
@@ -2795,29 +2796,31 @@ function setupPronunciation(ex) {
     const similarity = computeSimilarity(expected, transcript);
     const matchEl = exerciseCard.querySelector('#pron-match');
     const detectedEl = exerciseCard.querySelector('#pron-detected');
+    const hearBtn = exerciseCard.querySelector('#btn-hear-correct');
 
-    let isCorrect;
     if (similarity >= 0.8) {
       matchEl.textContent = 'Excellent!';
       matchEl.className = 'match-good';
       detectedEl.className = 'detected-text match-good';
-      isCorrect = true;
+      // Good match — lock answer and auto-advance
+      answered = true;
+      sessionResults.push({ type: ex.type, correct: true });
+      recordExerciseResult(ex.type, true, ex._vocabIndex, ex._grammarIndex);
+      if (hearBtn) hearBtn.classList.add('hidden');
+      showNextButton(true);
     } else if (similarity >= 0.5) {
-      matchEl.textContent = 'Close! Try again or continue.';
+      matchEl.textContent = 'Close — try again or skip';
       matchEl.className = 'match-partial';
       detectedEl.className = 'detected-text match-partial';
-      isCorrect = true;
+      // Partial — allow retry, show hear button
+      if (hearBtn) hearBtn.classList.remove('hidden');
     } else {
       matchEl.textContent = 'Try again';
       matchEl.className = 'match-poor';
       detectedEl.className = 'detected-text match-poor';
-      isCorrect = false;
+      // Poor — allow retry, show hear button
+      if (hearBtn) hearBtn.classList.remove('hidden');
     }
-
-    answered = true;
-    sessionResults.push({ type: ex.type, correct: isCorrect });
-    recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
-    showNextButton(isCorrect);
   }
 
   btnRecord.addEventListener('click', () => {
@@ -2871,6 +2874,14 @@ function setupPronunciation(ex) {
 
     recognition.start();
   });
+
+  // "Hear correct pronunciation" button — TTS playback of the expected text
+  const hearBtn = exerciseCard.querySelector('#btn-hear-correct');
+  if (hearBtn) {
+    hearBtn.addEventListener('click', () => {
+      speakJapanese(expected);
+    });
+  }
 }
 
 function computeSimilarity(a, b) {
