@@ -2727,26 +2727,14 @@ function generateLearningSession(groupIdx) {
 
   // Add "spot" exercises for current group words
   for (const word of currentGroupWords) {
-    if (allWords.length >= 4) {
-      exerciseList.push(makeHiraganaSpot(word, allWords));
-    }
-  }
-
-  // Fill remaining with review words from previous groups (if any)
-  const prevWords = allWords.filter(w => w._groupIdx < groupIdx);
-  if (prevWords.length > 0) {
-    const reviewPicks = pickN(prevWords, Math.min(4, prevWords.length));
-    for (const word of reviewPicks) {
-      exerciseList.push(Math.random() < 0.5
-        ? makeHiraganaRead(word)
-        : (allWords.length >= 4 ? makeHiraganaSpot(word, allWords) : makeHiraganaRead(word))
-      );
+    if (currentGroupWords.length >= 4) {
+      exerciseList.push(makeHiraganaSpot(word, allWords, currentGroupWords));
     }
   }
 
   // Shuffle exercises (but keep intro first)
   const intro = exerciseList.shift();
-  const shuffled = shuffle(exerciseList).slice(0, targetCount);
+  const shuffled = shuffle(exerciseList);
   return [intro, ...shuffled];
 }
 
@@ -2761,9 +2749,11 @@ function makeHiraganaRead(word) {
   };
 }
 
-function makeHiraganaSpot(word, allWords) {
-  const others = allWords.filter(w => w.kana !== word.kana);
-  const distractors = pickN(others, 3).map(w => w.kana);
+function makeHiraganaSpot(word, allWords, currentGroupWords) {
+  // Prefer distractors from the same group; fall back to full pool if not enough
+  const sameGroup = (currentGroupWords || allWords).filter(w => w.kana !== word.kana);
+  const pool = sameGroup.length >= 3 ? sameGroup : allWords.filter(w => w.kana !== word.kana);
+  const distractors = pickN(pool, 3).map(w => w.kana);
   const options = shuffle([word.kana, ...distractors]);
   return {
     type: 'hiragana_spot',
