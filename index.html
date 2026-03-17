@@ -2615,7 +2615,7 @@ function setupSentenceBuild(ex) {
       answerZone.classList.add('incorrect-zone');
     }
 
-    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex, userAnswer);
+    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
     showNextButton();
   });
 }
@@ -2921,61 +2921,12 @@ window.__selectOption = function(btn) {
     listeningRomajiSlot.classList.remove('hidden');
   }
 
-  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex, userAnswer);
+  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
   showNextButton();
 };
 
-// ── Gemini API for mistake explanations ─────────────
-const GEMINI_API_KEY = 'AIzaSyAg6Eo0yGJaeuD4f5fVM0HfL3cmOQyvdUI';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-async function getGeminiExplanation(exercise, userAnswer, correctAnswer) {
-  const ex = exercise;
-  const typeLabels = {
-    vocab_quiz: 'vocabulary',
-    grammar_fill: 'grammar (fill in the blank)',
-    sentence_build: 'sentence building',
-    reading: 'reading comprehension',
-    listening: 'listening comprehension',
-    pronunciation: 'pronunciation'
-  };
-
-  const prompt = `You are a Japanese language tutor helping a JLPT N5 student. They just got a question wrong. Explain WHY their answer was wrong and help them understand the correct answer. Be concise (2-3 sentences max), warm, and specific to their mistake. Use romaji alongside any Japanese.
-
-Exercise type: ${typeLabels[ex.type] || ex.type}
-Question: ${ex.question || ex.japanese || ex.passage || ''}
-Their answer: ${userAnswer}
-Correct answer: ${correctAnswer}
-${ex.explanation ? 'Context: ' + ex.explanation : ''}`;
-
-  try {
-    const res = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 500 }
-      })
-    });
-
-    if (!res.ok) {
-      const errorBody = await res.text().catch(() => 'unknown');
-      console.error('Gemini API error:', res.status, errorBody);
-      return null;
-    }
-    const data = await res.json();
-    console.log('Gemini response:', data);
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const textParts = parts.filter(p => !p.thought && p.text);
-    return textParts.length > 0 ? textParts[textParts.length - 1].text : null;
-  } catch (e) {
-    console.error('Gemini explanation failed:', e);
-    return null;
-  }
-}
-
 // ── Explanation ─────────────────────────────────────
-function showExplanation(isCorrect, explanation, correctAnswer, exercise, userAnswer) {
+function showExplanation(isCorrect, explanation, correctAnswer) {
   const slot = exerciseCard.querySelector('#explanation-slot');
   if (!slot) return;
 
@@ -2992,22 +2943,6 @@ function showExplanation(isCorrect, explanation, correctAnswer, exercise, userAn
   html += `</div>`;
 
   slot.innerHTML = html;
-
-  // For wrong answers, fetch a personalized explanation from Gemini
-  if (!isCorrect && exercise && userAnswer) {
-    const aiSlot = document.createElement('div');
-    aiSlot.className = 'explanation-box ai-explanation';
-    aiSlot.innerHTML = '<em style="color:var(--color-text-muted);">Getting personalized explanation...</em>';
-    slot.appendChild(aiSlot);
-
-    getGeminiExplanation(exercise, userAnswer, correctAnswer).then(aiText => {
-      if (aiText) {
-        aiSlot.innerHTML = `<strong style="color:var(--color-accent);">Sensei says:</strong><br>${escHtml(aiText)}`;
-      } else {
-        aiSlot.innerHTML = '<em style="color:var(--color-text-muted);">Could not load AI explanation. Check API key in console.</em>';
-      }
-    });
-  }
 }
 
 function showNextButton() {
