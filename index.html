@@ -342,10 +342,10 @@
 
     .app-title {
       font-family: var(--font-jp);
-      font-size: 4rem;
+      font-size: 2.5rem;
       font-weight: 400;
-      color: var(--color-text);
-      letter-spacing: 0.1em;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.15em;
       margin-bottom: 0;
     }
 
@@ -1200,7 +1200,7 @@
       }
 
       .app-title {
-        font-size: 5rem;
+        font-size: 3rem;
       }
 
       .exercise-prompt .japanese-text {
@@ -2030,7 +2030,54 @@ function generateExercises(content, count = 13) {
     else emptyRounds = 0;
   }
 
-  return shuffle(exercises);
+  return smartInterleave(exercises);
+}
+
+/**
+ * Smart interleave: no consecutive same exercise type, no consecutive same word/vocab key.
+ * Uses greedy pick with backtracking: at each slot, pick a random valid exercise.
+ * Falls back to any remaining exercise if constraints can't be met.
+ */
+function smartInterleave(exercises) {
+  const pool = shuffle([...exercises]);
+  const result = [];
+
+  while (pool.length > 0) {
+    const lastType = result.length > 0 ? result[result.length - 1].type : null;
+    const lastWord = result.length > 0 ? getExerciseWord(result[result.length - 1]) : null;
+
+    // Find candidates that differ in both type and word from previous
+    let candidates = pool.filter((ex, i) => {
+      if (ex.type === lastType) return false;
+      if (lastWord && getExerciseWord(ex) === lastWord) return false;
+      return true;
+    });
+
+    // Relax: allow same word if type differs
+    if (candidates.length === 0) {
+      candidates = pool.filter(ex => ex.type !== lastType);
+    }
+
+    // Relax fully: take anything
+    if (candidates.length === 0) {
+      candidates = pool;
+    }
+
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    result.push(pick);
+    pool.splice(pool.indexOf(pick), 1);
+  }
+
+  return result;
+}
+
+/** Extract a word identity string from an exercise for dedup comparison */
+function getExerciseWord(ex) {
+  if (ex._word) return ex._word.kana || ex._word.romaji;
+  if (ex._globalKey) return ex._globalKey;
+  if (ex.japanese) return ex.japanese;
+  if (ex.correct_answer) return ex.correct_answer;
+  return null;
 }
 
 // ══════════════════════════════════════════════════════
@@ -2717,10 +2764,10 @@ function generateLearningSession(groupIdx, groups, confusables) {
     exerciseList.push(makeHiraganaConfusable(pair));
   }
 
-  // Shuffle exercises (but keep intro first), cap at reasonable length
+  // Smart interleave (but keep intro first), cap at reasonable length
   const intro = exerciseList.shift();
-  const shuffled = shuffle(exerciseList).slice(0, 15);
-  return [intro, ...shuffled];
+  const capped = shuffle(exerciseList).slice(0, 15);
+  return [intro, ...smartInterleave(capped)];
 }
 
 function makeHiraganaRead(word) {
