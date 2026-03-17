@@ -216,9 +216,11 @@
       pointer-events: auto;
     }
 
-    .btn-option:hover:not(:disabled) {
-      color: var(--color-vermillion);
-      background: transparent;
+    @media (hover: hover) {
+      .btn-option:hover:not(:disabled) {
+        color: var(--color-vermillion);
+        background: transparent;
+      }
     }
 
     .btn-option:disabled {
@@ -1458,8 +1460,7 @@
     </div>
 
     <div class="session-footer">
-      <button class="btn-small" id="btn-skip">Skip</button>
-      <button class="btn-primary hidden" id="btn-next">Next</button>
+      <button class="btn-primary" id="btn-action">Skip</button>
     </div>
   </div>
 
@@ -1963,8 +1964,7 @@ const viewSession  = $('#view-session');
 const viewComplete = $('#view-complete');
 
 const btnStartSession = $('#btn-start-session');
-const btnSkip          = $('#btn-skip');
-const btnNext          = $('#btn-next');
+const btnAction        = $('#btn-action');
 const btnPracticeAgain = $('#btn-practice-again');
 const btnBackHome      = $('#btn-back-home');
 
@@ -2387,8 +2387,8 @@ function renderExercise() {
   }
 
   answered = false;
-  btnNext.classList.add('hidden');
-  btnSkip.classList.remove('hidden');
+  btnAction.textContent = 'Skip';
+  btnAction.disabled = false;
 
   // Update progress
   const total = exercises.length;
@@ -2961,12 +2961,12 @@ function showExplanation(isCorrect, explanation, correctAnswer) {
 }
 
 function showNextButton() {
-  // 1-second delay before enabling Next to prevent accidental double-tap
-  btnSkip.classList.add('hidden');
+  // Brief delay before enabling Next to prevent accidental double-tap
+  btnAction.disabled = true;
   setTimeout(() => {
-    btnNext.classList.remove('hidden');
-    btnNext.disabled = false;
-  }, 1000);
+    btnAction.textContent = 'Next';
+    btnAction.disabled = false;
+  }, 400);
 }
 
 // ── Navigation ──────────────────────────────────────
@@ -3091,13 +3091,12 @@ btnStartSession.addEventListener('click', () => {
   startSession();
 });
 
-btnNext.addEventListener('click', () => {
-  btnNext.classList.add('hidden');
-  goToNextExercise();
-});
-
-btnSkip.addEventListener('click', () => {
-  skipExercise();
+btnAction.addEventListener('click', () => {
+  if (answered) {
+    goToNextExercise();
+  } else {
+    skipExercise();
+  }
 });
 
 btnPracticeAgain.addEventListener('click', () => {
