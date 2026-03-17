@@ -1277,29 +1277,6 @@
       color: var(--color-text);
     }
 
-    /* Apple-style slow reveal */
-    @keyframes startReveal {
-      from {
-        opacity: 0;
-        transform: translateY(12px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .start-reveal {
-      animation: startReveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-    }
-
-    .start-reveal .start-selector {
-      animation: startReveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.15s both;
-    }
-
-    .start-reveal .start-actions {
-      animation: startReveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.3s both;
-    }
 
     .profile-list {
       display: flex;
@@ -2351,11 +2328,8 @@ function renderProfileSection() {
         // Apple fade-in: hide welcome, reveal main with animation
         profileSection.classList.add('hidden');
         startCenter.classList.remove('hidden');
-        startCenter.classList.add('start-reveal');
         $('#start-topbar').classList.remove('hidden');
         $('#mode-selector').classList.remove('hidden');
-        $('#mode-selector').classList.add('start-reveal');
-        $('#start-topbar').classList.add('start-reveal');
         renderStartScreen();
       }
     };
