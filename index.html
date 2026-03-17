@@ -469,6 +469,7 @@
       padding-top: 0;
       padding-bottom: 2rem;
       gap: 2rem;
+      min-height: 100dvh;
     }
 
     /* Progress Bar */
@@ -892,6 +893,12 @@
 
     .session-footer .btn-next-state {
       font-size: 1rem;
+    }
+
+    #session-review-log {
+      padding-top: 1rem;
+      opacity: 0.6;
+      font-size: 0.85rem;
     }
 
     /* ══════════════════════════════════════════════════
@@ -3026,7 +3033,7 @@ function showNextButton(autoAdvance) {
     btnAction.disabled = true;
     setTimeout(() => {
       if (answered) goToNextExercise();
-    }, 700);
+    }, 1000);
   } else {
     // Wrong answer: require click
     btnAction.disabled = true;
