@@ -879,6 +879,21 @@
       flex: none;
     }
 
+    .session-footer .btn-skip-state {
+      background: transparent;
+      color: var(--color-border-light);
+      border: none;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: lowercase;
+      padding: 0.4rem 0.8rem;
+      min-height: auto;
+    }
+
+    .session-footer .btn-next-state {
+      font-size: 1rem;
+    }
+
     /* ══════════════════════════════════════════════════
        SESSION COMPLETE SCREEN
        ══════════════════════════════════════════════════ */
@@ -1460,7 +1475,7 @@
     </div>
 
     <div class="session-footer">
-      <button class="btn-primary" id="btn-action">Skip</button>
+      <button class="btn-primary" id="btn-action">skip</button>
     </div>
 
     <div id="session-review-log"></div>
@@ -1751,6 +1766,32 @@ function checkLessonAdvancement(history, lessons) {
   // Kept as a stub so callers don't break.
 }
 
+/**
+ * Create a reinforcement exercise for a wrong answer using a different exercise type.
+ * Returns null if no alternative type is possible.
+ */
+function makeReinforcement(wrongExercise, lessonVocab, lessonSentences) {
+  const vocabKey = wrongExercise._vocabIndex;
+  const wrongType = wrongExercise.type;
+
+  // Only reinforce vocab-based exercises (they have a _vocabIndex)
+  if (!vocabKey || lessonVocab.length < 4) return null;
+
+  // Pick a different exercise type
+  const vocabTypes = ['vocab_quiz', 'listening', 'pronunciation'];
+  const alternatives = vocabTypes.filter(t => t !== wrongType);
+  const newType = alternatives[Math.floor(Math.random() * alternatives.length)];
+
+  if (newType === 'vocab_quiz') {
+    return makeVocabQuiz(lessonVocab, vocabKey, lessonVocab);
+  } else if (newType === 'listening') {
+    return makeListening(lessonVocab, vocabKey, lessonVocab);
+  } else if (newType === 'pronunciation') {
+    return makePronunciation(lessonVocab, lessonSentences, vocabKey);
+  }
+  return null;
+}
+
 function generateExercises(content, count = 13) {
   const history = loadSkillHistory();
   const lessons = content.lessons;
@@ -1945,6 +1986,7 @@ let currentIndex = 0;     // current exercise index within session
 let exercises = [];       // array of exercises for the current session
 let answered = false;     // whether the current exercise has been answered
 let sessionResults = [];  // array of { type, correct } for each answered exercise
+let reinforceQueue = [];  // wrong items to reinforce later in session
 
 // TTS
 let voices = [];
@@ -2377,6 +2419,7 @@ async function startSession() {
   currentIndex = 0;
   sessionResults = [];
   answered = false;
+  reinforceQueue = [];
 
   const log = document.getElementById('session-review-log');
   if (log) log.innerHTML = '';
@@ -2392,7 +2435,9 @@ function renderExercise() {
   }
 
   answered = false;
-  btnAction.textContent = 'Skip';
+  btnAction.textContent = 'skip';
+  btnAction.classList.add('btn-skip-state');
+  btnAction.classList.remove('btn-next-state');
   btnAction.disabled = false;
 
   // Update progress
@@ -2608,6 +2653,11 @@ function setupSentenceBuild(ex) {
     // Record result
     sessionResults.push({ type: ex.type, correct: isCorrect });
     recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
+
+    // Queue reinforcement for wrong answers
+    if (!isCorrect) {
+      reinforceQueue.push(ex);
+    }
 
     if (isCorrect) {
       answerZone.classList.add('correct-zone');
@@ -2915,6 +2965,11 @@ window.__selectOption = function(btn) {
   sessionResults.push({ type: ex.type, correct: isCorrect });
   recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
 
+  // Queue reinforcement for wrong answers
+  if (!isCorrect) {
+    reinforceQueue.push(ex);
+  }
+
   // Reveal listening romaji after answering
   const listeningRomajiSlot = exerciseCard.querySelector('#listening-romaji-slot');
   if (listeningRomajiSlot) {
@@ -2967,16 +3022,18 @@ function showExplanation(isCorrect, explanation, correctAnswer, exercise) {
 
 function showNextButton(autoAdvance) {
   if (autoAdvance) {
-    // Correct answer: auto-advance after brief pause
+    // Correct answer: auto-advance
     btnAction.disabled = true;
     setTimeout(() => {
       if (answered) goToNextExercise();
-    }, 1000);
+    }, 700);
   } else {
     // Wrong answer: require click
     btnAction.disabled = true;
     setTimeout(() => {
       btnAction.textContent = 'Next';
+      btnAction.classList.remove('btn-skip-state');
+      btnAction.classList.add('btn-next-state');
       btnAction.disabled = false;
     }, 400);
   }
@@ -2985,6 +3042,22 @@ function showNextButton(autoAdvance) {
 // ── Navigation ──────────────────────────────────────
 function goToNextExercise() {
   currentIndex++;
+
+  // Every 2 exercises, inject a reinforcement if queued
+  if (reinforceQueue.length > 0 && currentIndex % 2 === 0 && currentIndex < exercises.length) {
+    const wrongEx = reinforceQueue.shift();
+    const history = loadSkillHistory();
+    const currentLessonIdx = history.currentLesson || 0;
+    const lessons = n5Content.lessons;
+    const lessonVocab = getVocabUpToLesson(lessons, currentLessonIdx).filter(v => v._lessonIdx === currentLessonIdx);
+    const lessonSentences = getSentencesUpToLesson(lessons, currentLessonIdx).filter(s => s._lessonIdx === currentLessonIdx);
+    const reinforcement = makeReinforcement(wrongEx, lessonVocab, lessonSentences);
+    if (reinforcement) {
+      reinforcement._isReinforcement = true;
+      exercises.splice(currentIndex, 0, reinforcement);
+    }
+  }
+
   if (currentIndex >= exercises.length) {
     finishSession();
   } else {
