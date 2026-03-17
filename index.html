@@ -2616,7 +2616,7 @@ function setupSentenceBuild(ex) {
     }
 
     showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex);
-    showNextButton();
+    showNextButton(isCorrect);
   });
 }
 
@@ -2760,7 +2760,7 @@ function setupPronunciation(ex) {
     answered = true;
     sessionResults.push({ type: ex.type, correct: isCorrect });
     recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
-    showNextButton();
+    showNextButton(isCorrect);
   }
 
   btnRecord.addEventListener('click', () => {
@@ -2922,7 +2922,7 @@ window.__selectOption = function(btn) {
   }
 
   showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer, ex);
-  showNextButton();
+  showNextButton(isCorrect);
 };
 
 // ── Explanation ─────────────────────────────────────
@@ -2931,11 +2931,14 @@ function showExplanation(isCorrect, explanation, correctAnswer, exercise) {
   const romaji = ex.romaji || null;
   const japanese = ex.japanese || ex.question || ex.passage || '';
 
+  // Avoid duplicate romaji if explanation already contains it
+  const explanationHasRomaji = explanation && romaji && explanation.includes(romaji);
+
   let html = `<div class="explanation-box">`;
   html += `<strong style="color:${isCorrect ? 'var(--color-correct)' : 'var(--color-incorrect)'}">`;
   html += isCorrect ? 'Correct!' : 'Incorrect';
   html += `</strong>`;
-  if (japanese && romaji) {
+  if (japanese && romaji && !explanationHasRomaji) {
     html += `<br><span class="jp">${escHtml(japanese)}</span> <span style="color:var(--color-text-muted);">(${escHtml(romaji)})</span>`;
   }
   if (!isCorrect && correctAnswer) {
@@ -2962,13 +2965,21 @@ function showExplanation(isCorrect, explanation, correctAnswer, exercise) {
   }
 }
 
-function showNextButton() {
-  // Brief delay before enabling Next to prevent accidental double-tap
-  btnAction.disabled = true;
-  setTimeout(() => {
-    btnAction.textContent = 'Next';
-    btnAction.disabled = false;
-  }, 400);
+function showNextButton(autoAdvance) {
+  if (autoAdvance) {
+    // Correct answer: auto-advance after brief pause
+    btnAction.disabled = true;
+    setTimeout(() => {
+      if (answered) goToNextExercise();
+    }, 1000);
+  } else {
+    // Wrong answer: require click
+    btnAction.disabled = true;
+    setTimeout(() => {
+      btnAction.textContent = 'Next';
+      btnAction.disabled = false;
+    }, 400);
+  }
 }
 
 // ── Navigation ──────────────────────────────────────
