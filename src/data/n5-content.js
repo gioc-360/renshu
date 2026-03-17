@@ -2,12 +2,14 @@
  * JLPT N5 Study Content — Genki I Curriculum
  *
  * Organized by lesson following the Genki I textbook progression.
- * Five phases:
- *   Phase 0 (Decode):       Kana recognition (hiragana + katakana)
+ * Four phases:
  *   Phase 1 (Foundation):   Greetings + Lessons 1-3
  *   Phase 2 (Structure):    Lessons 4-6
  *   Phase 3 (Flow):         Lessons 7-9
  *   Phase 4 (Independence): Lessons 10-12
+ *
+ * Kana learning (hiragana + katakana) is handled by dedicated Learning modes,
+ * not by Practice mode. See hiragana-groups.js and katakana-groups.js.
  *
  * Each lesson contains:
  *   - vocabulary   (words to learn)
@@ -146,149 +148,6 @@ const n5Content = {
   // ===========================================================================
   lessons: [
     // ─────────────────────────────────────────────────────────────────────────
-    // PHASE 0: Decode — Kana Recognition (Hiragana + Katakana)
-    // ─────────────────────────────────────────────────────────────────────────
-    {
-      id: "P0",
-      phase: 0,
-      title: "Decode: Learn to Read",
-      genki_ref: "Pre-GENKI",
-
-      vocabulary: [
-        // Hiragana recognition — a-row
-        { kana: "あ", romaji: "a", english: "a", category: "hiragana_a" },
-        { kana: "い", romaji: "i", english: "i", category: "hiragana_a" },
-        { kana: "う", romaji: "u", english: "u", category: "hiragana_a" },
-        { kana: "え", romaji: "e", english: "e", category: "hiragana_a" },
-        { kana: "お", romaji: "o", english: "o", category: "hiragana_a" },
-        // Hiragana — ka-row
-        { kana: "か", romaji: "ka", english: "ka", category: "hiragana_ka" },
-        { kana: "き", romaji: "ki", english: "ki", category: "hiragana_ka" },
-        { kana: "く", romaji: "ku", english: "ku", category: "hiragana_ka" },
-        { kana: "け", romaji: "ke", english: "ke", category: "hiragana_ka" },
-        { kana: "こ", romaji: "ko", english: "ko", category: "hiragana_ka" },
-        // Hiragana — sa-row
-        { kana: "さ", romaji: "sa", english: "sa", category: "hiragana_sa" },
-        { kana: "し", romaji: "shi", english: "shi", category: "hiragana_sa" },
-        { kana: "す", romaji: "su", english: "su", category: "hiragana_sa" },
-        { kana: "せ", romaji: "se", english: "se", category: "hiragana_sa" },
-        { kana: "そ", romaji: "so", english: "so", category: "hiragana_sa" },
-        // Hiragana — ta-row
-        { kana: "た", romaji: "ta", english: "ta", category: "hiragana_ta" },
-        { kana: "ち", romaji: "chi", english: "chi", category: "hiragana_ta" },
-        { kana: "つ", romaji: "tsu", english: "tsu", category: "hiragana_ta" },
-        { kana: "て", romaji: "te", english: "te", category: "hiragana_ta" },
-        { kana: "と", romaji: "to", english: "to", category: "hiragana_ta" },
-        // Hiragana — na-row
-        { kana: "な", romaji: "na", english: "na", category: "hiragana_na" },
-        { kana: "に", romaji: "ni", english: "ni", category: "hiragana_na" },
-        { kana: "ぬ", romaji: "nu", english: "nu", category: "hiragana_na" },
-        { kana: "ね", romaji: "ne", english: "ne", category: "hiragana_na" },
-        { kana: "の", romaji: "no", english: "no", category: "hiragana_na" },
-        // Hiragana — ha-row
-        { kana: "は", romaji: "ha", english: "ha", category: "hiragana_ha" },
-        { kana: "ひ", romaji: "hi", english: "hi", category: "hiragana_ha" },
-        { kana: "ふ", romaji: "fu", english: "fu", category: "hiragana_ha" },
-        { kana: "へ", romaji: "he", english: "he", category: "hiragana_ha" },
-        { kana: "ほ", romaji: "ho", english: "ho", category: "hiragana_ha" },
-        // Hiragana — ma-row
-        { kana: "ま", romaji: "ma", english: "ma", category: "hiragana_ma" },
-        { kana: "み", romaji: "mi", english: "mi", category: "hiragana_ma" },
-        { kana: "む", romaji: "mu", english: "mu", category: "hiragana_ma" },
-        { kana: "め", romaji: "me", english: "me", category: "hiragana_ma" },
-        { kana: "も", romaji: "mo", english: "mo", category: "hiragana_ma" },
-        // Hiragana — ya-row
-        { kana: "や", romaji: "ya", english: "ya", category: "hiragana_ya" },
-        { kana: "ゆ", romaji: "yu", english: "yu", category: "hiragana_ya" },
-        { kana: "よ", romaji: "yo", english: "yo", category: "hiragana_ya" },
-        // Hiragana — ra-row
-        { kana: "ら", romaji: "ra", english: "ra", category: "hiragana_ra" },
-        { kana: "り", romaji: "ri", english: "ri", category: "hiragana_ra" },
-        { kana: "る", romaji: "ru", english: "ru", category: "hiragana_ra" },
-        { kana: "れ", romaji: "re", english: "re", category: "hiragana_ra" },
-        { kana: "ろ", romaji: "ro", english: "ro", category: "hiragana_ra" },
-        // Hiragana — wa-row + n
-        { kana: "わ", romaji: "wa", english: "wa", category: "hiragana_wa" },
-        { kana: "を", romaji: "wo", english: "wo", category: "hiragana_wa" },
-        { kana: "ん", romaji: "n", english: "n", category: "hiragana_wa" },
-        // Katakana — a-row
-        { kana: "ア", romaji: "a", english: "a (katakana)", category: "katakana_a" },
-        { kana: "イ", romaji: "i", english: "i (katakana)", category: "katakana_a" },
-        { kana: "ウ", romaji: "u", english: "u (katakana)", category: "katakana_a" },
-        { kana: "エ", romaji: "e", english: "e (katakana)", category: "katakana_a" },
-        { kana: "オ", romaji: "o", english: "o (katakana)", category: "katakana_a" },
-        // Katakana — ka-row
-        { kana: "カ", romaji: "ka", english: "ka (katakana)", category: "katakana_ka" },
-        { kana: "キ", romaji: "ki", english: "ki (katakana)", category: "katakana_ka" },
-        { kana: "ク", romaji: "ku", english: "ku (katakana)", category: "katakana_ka" },
-        { kana: "ケ", romaji: "ke", english: "ke (katakana)", category: "katakana_ka" },
-        { kana: "コ", romaji: "ko", english: "ko (katakana)", category: "katakana_ka" },
-        // Katakana — sa-row
-        { kana: "サ", romaji: "sa", english: "sa (katakana)", category: "katakana_sa" },
-        { kana: "シ", romaji: "shi", english: "shi (katakana)", category: "katakana_sa" },
-        { kana: "ス", romaji: "su", english: "su (katakana)", category: "katakana_sa" },
-        { kana: "セ", romaji: "se", english: "se (katakana)", category: "katakana_sa" },
-        { kana: "ソ", romaji: "so", english: "so (katakana)", category: "katakana_sa" },
-        // Katakana — ta-row
-        { kana: "タ", romaji: "ta", english: "ta (katakana)", category: "katakana_ta" },
-        { kana: "チ", romaji: "chi", english: "chi (katakana)", category: "katakana_ta" },
-        { kana: "ツ", romaji: "tsu", english: "tsu (katakana)", category: "katakana_ta" },
-        { kana: "テ", romaji: "te", english: "te (katakana)", category: "katakana_ta" },
-        { kana: "ト", romaji: "to", english: "to (katakana)", category: "katakana_ta" },
-        // Katakana — na-row
-        { kana: "ナ", romaji: "na", english: "na (katakana)", category: "katakana_na" },
-        { kana: "ニ", romaji: "ni", english: "ni (katakana)", category: "katakana_na" },
-        { kana: "ヌ", romaji: "nu", english: "nu (katakana)", category: "katakana_na" },
-        { kana: "ネ", romaji: "ne", english: "ne (katakana)", category: "katakana_na" },
-        { kana: "ノ", romaji: "no", english: "no (katakana)", category: "katakana_na" },
-        // Katakana — ha-row
-        { kana: "ハ", romaji: "ha", english: "ha (katakana)", category: "katakana_ha" },
-        { kana: "ヒ", romaji: "hi", english: "hi (katakana)", category: "katakana_ha" },
-        { kana: "フ", romaji: "fu", english: "fu (katakana)", category: "katakana_ha" },
-        { kana: "ヘ", romaji: "he", english: "he (katakana)", category: "katakana_ha" },
-        { kana: "ホ", romaji: "ho", english: "ho (katakana)", category: "katakana_ha" },
-        // Katakana — ma-row
-        { kana: "マ", romaji: "ma", english: "ma (katakana)", category: "katakana_ma" },
-        { kana: "ミ", romaji: "mi", english: "mi (katakana)", category: "katakana_ma" },
-        { kana: "ム", romaji: "mu", english: "mu (katakana)", category: "katakana_ma" },
-        { kana: "メ", romaji: "me", english: "me (katakana)", category: "katakana_ma" },
-        { kana: "モ", romaji: "mo", english: "mo (katakana)", category: "katakana_ma" },
-        // Katakana — ya-row
-        { kana: "ヤ", romaji: "ya", english: "ya (katakana)", category: "katakana_ya" },
-        { kana: "ユ", romaji: "yu", english: "yu (katakana)", category: "katakana_ya" },
-        { kana: "ヨ", romaji: "yo", english: "yo (katakana)", category: "katakana_ya" },
-        // Katakana — ra-row
-        { kana: "ラ", romaji: "ra", english: "ra (katakana)", category: "katakana_ra" },
-        { kana: "リ", romaji: "ri", english: "ri (katakana)", category: "katakana_ra" },
-        { kana: "ル", romaji: "ru", english: "ru (katakana)", category: "katakana_ra" },
-        { kana: "レ", romaji: "re", english: "re (katakana)", category: "katakana_ra" },
-        { kana: "ロ", romaji: "ro", english: "ro (katakana)", category: "katakana_ra" },
-        // Katakana — wa-row + n
-        { kana: "ワ", romaji: "wa", english: "wa (katakana)", category: "katakana_wa" },
-        { kana: "ヲ", romaji: "wo", english: "wo (katakana)", category: "katakana_wa" },
-        { kana: "ン", romaji: "n", english: "n (katakana)", category: "katakana_wa" },
-      ],
-
-      grammar: [],
-      grammarFills: [],
-      sentenceBuilds: [],
-
-      sentences: [
-        { japanese: "すし", romaji: "sushi", english: "sushi" },
-        { japanese: "さくら", romaji: "sakura", english: "cherry blossom" },
-        { japanese: "ありがとう", romaji: "arigatou", english: "thank you" },
-        { japanese: "おはよう", romaji: "ohayou", english: "good morning" },
-        { japanese: "コーヒー", romaji: "koohii", english: "coffee" },
-        { japanese: "テレビ", romaji: "terebi", english: "TV" },
-        { japanese: "アメリカ", romaji: "amerika", english: "America" },
-        { japanese: "パソコン", romaji: "pasokon", english: "personal computer" },
-        { japanese: "ねこ", romaji: "neko", english: "cat" },
-        { japanese: "いぬ", romaji: "inu", english: "dog" },
-        { japanese: "みず", romaji: "mizu", english: "water" },
-        { japanese: "やま", romaji: "yama", english: "mountain" },
-      ],
-    },
-
     // ─────────────────────────────────────────────────────────────────────────
     // GREETINGS (Phase 1)
     // ─────────────────────────────────────────────────────────────────────────

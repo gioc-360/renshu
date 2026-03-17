@@ -1740,7 +1740,7 @@ function getCurrentPhase() {
 function romajiHtml(romaji, phase) {
   if (!romaji) return '';
   if (phase <= 1) {
-    // Phase 0 (Decode) and Phase 1 (Foundation): always visible
+    // Phase 1 (Foundation): always visible
     return `<p class="romaji-text visible">${escHtml(romaji)}</p>`;
   } else {
     // Tap to reveal
@@ -1943,14 +1943,12 @@ function generateExercises(content, count = 13) {
 
   const currentLessonIdx = history.currentLesson || 0;
   const currentLesson = lessons[currentLessonIdx];
-  const isPhase0 = currentLesson.phase === 0;
-
   // STRICT CONTAINMENT: only use current lesson's content
   // No cross-lesson pooling — exercises come from this lesson only
   const lessonVocab = getVocabUpToLesson(lessons, currentLessonIdx).filter(v => v._lessonIdx === currentLessonIdx);
   const lessonSentences = getSentencesUpToLesson(lessons, currentLessonIdx).filter(s => s._lessonIdx === currentLessonIdx);
-  const lessonGrammarFills = isPhase0 ? [] : getGrammarFillsUpToLesson(lessons, currentLessonIdx).filter(g => g._lessonIdx === currentLessonIdx);
-  const lessonSentenceBuilds = isPhase0 ? [] : getSentenceBuildsUpToLesson(lessons, currentLessonIdx).filter(b => b._lessonIdx === currentLessonIdx);
+  const lessonGrammarFills = getGrammarFillsUpToLesson(lessons, currentLessonIdx).filter(g => g._lessonIdx === currentLessonIdx);
+  const lessonSentenceBuilds = getSentenceBuildsUpToLesson(lessons, currentLessonIdx).filter(b => b._lessonIdx === currentLessonIdx);
 
   const exercises = [];
 
@@ -1959,9 +1957,9 @@ function generateExercises(content, count = 13) {
   const newVocabCount = Math.min(3 + Math.floor(Math.random() * 3), unseenVocab.length);
   const newVocabKeys = unseenVocab.slice(0, newVocabCount).map(v => v._globalKey);
 
-  // NEW grammar fills (1-2) — skip for Phase 0
+  // NEW grammar fills (1-2)
   const unseenGrammar = lessonGrammarFills.filter(g => !history.seenGrammar.includes(g._globalKey));
-  const newGrammarCount = isPhase0 ? 0 : Math.min(1 + Math.floor(Math.random() * 2), unseenGrammar.length);
+  const newGrammarCount = Math.min(1 + Math.floor(Math.random() * 2), unseenGrammar.length);
   const newGrammarKeys = unseenGrammar.slice(0, newGrammarCount).map(g => g._globalKey);
 
   // Mark new items as seen
@@ -1978,13 +1976,13 @@ function generateExercises(content, count = 13) {
     exercises.push(makeVocabQuiz(lessonVocab, key, lessonVocab));
   }
 
-  // Exercises for NEW grammar (skipped for Phase 0)
+  // Exercises for NEW grammar
   for (const key of newGrammarKeys) {
     exercises.push(makeGrammarFill(lessonGrammarFills, key, lessonGrammarFills));
   }
 
   // One sentence_build and one reading (if this lesson has them)
-  if (!isPhase0 && lessonSentenceBuilds.length > 0) {
+  if (lessonSentenceBuilds.length > 0) {
     const sb = makeSentenceBuild(lessonSentenceBuilds, lessonSentenceBuilds);
     if (sb) exercises.push(sb);
   }
@@ -2013,25 +2011,8 @@ function generateExercises(content, count = 13) {
     const rand = Math.random();
     const prevLength = exercises.length;
 
-    if (isPhase0) {
-      // Phase 0: vocab_quiz, listening, pronunciation, reading only
-      if (rand < 0.40 && sortedReviewVocab.length > 0) {
-        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
-        exercises.push(makeVocabQuiz(lessonVocab, reviewKey, lessonVocab));
-      } else if (rand < 0.60 && sortedReviewVocab.length > 0) {
-        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
-        exercises.push(makeListening(lessonVocab, reviewKey, lessonVocab));
-      } else if (rand < 0.80 && sortedReviewVocab.length > 0) {
-        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
-        exercises.push(makePronunciation(lessonVocab, lessonSentences, reviewKey));
-      } else if (lessonSentences.length >= 3) {
-        const rd = makeReading(lessonSentences, lessonSentences);
-        if (rd) exercises.push(rd);
-      } else if (lessonVocab.length >= 4) {
-        exercises.push(makeVocabQuiz(lessonVocab, null, lessonVocab));
-      }
-    } else {
-      // Normal phases: full exercise mix from this lesson only
+    {
+      // Full exercise mix from this lesson only
       if (rand < 0.35 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
         exercises.push(makeVocabQuiz(lessonVocab, reviewKey, lessonVocab));
@@ -2470,7 +2451,7 @@ function renderProgressionSection() {
   const lessonPct = lessonVocabTotal > 0 ? Math.round((lessonLearnedVocab / lessonVocabTotal) * 100) : 0;
 
   // Phase labels
-  const phaseLabels = { 0: 'Decode', 1: 'Foundation', 2: 'Structure', 3: 'Flow', 4: 'Independence' };
+  const phaseLabels = { 1: 'Foundation', 2: 'Structure', 3: 'Flow', 4: 'Independence' };
   const phaseLabel = phaseLabels[currentLesson.phase] || '';
 
   section.innerHTML = `
