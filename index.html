@@ -1640,7 +1640,7 @@
 // Imports from external modules
 // ══════════════════════════════════════════════════════
 import n5Content from './src/data/n5-content.js';
-import hiraganaGroups from './src/data/hiragana-groups.js';
+import hiraganaGroups, { confusablePairs } from './src/data/hiragana-groups.js';
 
 // ══════════════════════════════════════════════════════
 // Exercise Generation (inline — lesson-aware Genki I curriculum)
@@ -2716,25 +2716,36 @@ function generateLearningSession(groupIdx) {
     _isIntro: true,
   });
 
-  // 2. Build exercises — mix of "read" and "spot"
-  // Prioritize current group words, mix in some from previous groups
-  const targetCount = Math.min(10, allWords.length * 2);
+  // 2. Build varied exercises from current group words
+  const exerciseTypes = ['read', 'spot', 'reverse', 'listen', 'build'];
 
-  // Each current group word gets at least one "read" exercise
   for (const word of currentGroupWords) {
-    exerciseList.push(makeHiraganaRead(word));
-  }
-
-  // Add "spot" exercises for current group words
-  for (const word of currentGroupWords) {
-    if (currentGroupWords.length >= 4) {
-      exerciseList.push(makeHiraganaSpot(word, allWords, currentGroupWords));
+    // Each word gets 2-3 exercise types (randomly chosen)
+    const types = shuffle(exerciseTypes).slice(0, 2 + (Math.random() < 0.3 ? 1 : 0));
+    for (const t of types) {
+      if (t === 'read') {
+        exerciseList.push(makeHiraganaRead(word));
+      } else if (t === 'spot' && currentGroupWords.length >= 4) {
+        exerciseList.push(makeHiraganaSpot(word, allWords, currentGroupWords));
+      } else if (t === 'reverse' && currentGroupWords.length >= 4) {
+        exerciseList.push(makeHiraganaReverse(word, currentGroupWords));
+      } else if (t === 'listen') {
+        exerciseList.push(makeHiraganaListen(word));
+      } else if (t === 'build' && word.breakdown.length >= 2) {
+        exerciseList.push(makeHiraganaBuild(word));
+      }
     }
   }
 
-  // Shuffle exercises (but keep intro first)
+  // 3. Add confusable pair exercises if available for this group
+  const availablePairs = confusablePairs.filter(p => p.availableAfterGroup <= groupIdx + 1);
+  for (const pair of availablePairs) {
+    exerciseList.push(makeHiraganaConfusable(pair));
+  }
+
+  // Shuffle exercises (but keep intro first), cap at reasonable length
   const intro = exerciseList.shift();
-  const shuffled = shuffle(exerciseList);
+  const shuffled = shuffle(exerciseList).slice(0, 15);
   return [intro, ...shuffled];
 }
 
@@ -2746,6 +2757,7 @@ function makeHiraganaRead(word) {
     english: word.english,
     breakdown: word.breakdown,
     explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+    _word: word,
   };
 }
 
@@ -2763,7 +2775,85 @@ function makeHiraganaSpot(word, allWords, currentGroupWords) {
     options,
     breakdown: word.breakdown,
     explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+    _word: word,
   };
+}
+
+function makeHiraganaReverse(word, currentGroupWords) {
+  const others = currentGroupWords.filter(w => w.english !== word.english);
+  const pool = others.length >= 3 ? others : currentGroupWords.filter(w => w.english !== word.english);
+  const distractors = pickN(pool, 3).map(w => w.english);
+  const options = shuffle([word.english, ...distractors]);
+  return {
+    type: 'hiragana_reverse',
+    japanese: word.kana,
+    romaji: word.romaji,
+    correct_answer: word.english,
+    options,
+    breakdown: word.breakdown,
+    explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+    _word: word,
+  };
+}
+
+function makeHiraganaListen(word) {
+  return {
+    type: 'hiragana_listen',
+    japanese: word.kana,
+    correct_answer: word.romaji,
+    english: word.english,
+    breakdown: word.breakdown,
+    explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+    _word: word,
+  };
+}
+
+function makeHiraganaConfusable(pair) {
+  // Randomly pick which character to ask about
+  const askAbout = Math.random() < 0.5 ? pair.a : pair.b;
+  const other = askAbout === pair.a ? pair.b : pair.a;
+  return {
+    type: 'hiragana_confusable',
+    targetRomaji: askAbout.romaji,
+    options: shuffle([askAbout, other]),
+    correct_answer: askAbout.kana,
+    hint: pair.hint,
+    explanation: `${askAbout.kana} = ${askAbout.romaji}, ${other.kana} = ${other.romaji}. ${pair.hint}`,
+  };
+}
+
+function makeHiraganaBuild(word) {
+  // Scramble the characters from the breakdown
+  const chars = word.breakdown.map(b => b.char);
+  let scrambled = shuffle(chars);
+  let attempts = 0;
+  while (scrambled.join('') === chars.join('') && attempts < 10) {
+    scrambled = shuffle(chars);
+    attempts++;
+  }
+  return {
+    type: 'hiragana_build',
+    english: word.english,
+    romaji: word.romaji,
+    characters: scrambled,
+    correct_answer: word.kana,
+    breakdown: word.breakdown,
+    explanation: word.breakdown.map(b => `${b.char} = ${b.romaji}`).join(', ') + ` \u2192 ${word.romaji} = "${word.english}"`,
+    _word: word,
+  };
+}
+
+// Learning mode reinforcement: wrong answers come back as a different type
+function makeLearningReinforcement(wrongEx) {
+  const word = wrongEx._word;
+  if (!word) return null;
+  const wrongType = wrongEx.type;
+  const alternatives = ['hiragana_read', 'hiragana_listen', 'hiragana_build'].filter(t => t !== wrongType);
+  const newType = alternatives[Math.floor(Math.random() * alternatives.length)];
+  if (newType === 'hiragana_read') return makeHiraganaRead(word);
+  if (newType === 'hiragana_listen') return makeHiraganaListen(word);
+  if (newType === 'hiragana_build' && word.breakdown.length >= 2) return makeHiraganaBuild(word);
+  return makeHiraganaRead(word);
 }
 
 function renderExercise() {
@@ -2808,6 +2898,10 @@ function renderExerciseContent(ex) {
     pronunciation: 'Pronunciation',
     hiragana_read: 'Read It',
     hiragana_spot: 'Spot It',
+    hiragana_reverse: 'Read & Choose',
+    hiragana_listen: 'Listen & Type',
+    hiragana_confusable: 'Look-Alikes',
+    hiragana_build: 'Build the Word',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -2840,6 +2934,18 @@ function renderExerciseContent(ex) {
     case 'hiragana_spot':
       html += renderHiraganaSpot(ex);
       break;
+    case 'hiragana_reverse':
+      html += renderHiraganaReverse(ex);
+      break;
+    case 'hiragana_listen':
+      html += renderHiraganaListen(ex);
+      break;
+    case 'hiragana_confusable':
+      html += renderHiraganaConfusable(ex);
+      break;
+    case 'hiragana_build':
+      html += renderHiraganaBuild(ex);
+      break;
     default:
       html += `<p>Unknown exercise type: ${type}</p>`;
   }
@@ -2851,6 +2957,10 @@ function renderExerciseContent(ex) {
     setupHiraganaIntro(ex);
   } else if (type === 'hiragana_read') {
     setupHiraganaRead(ex);
+  } else if (type === 'hiragana_listen') {
+    setupHiraganaListen(ex);
+  } else if (type === 'hiragana_build') {
+    setupHiraganaBuild(ex);
   } else if (type === 'sentence_build') {
     setupSentenceBuild(ex);
   } else if (type === 'listening') {
@@ -2953,6 +3063,178 @@ function renderHiraganaSpot(ex) {
   }
   html += `</div><div id="explanation-slot"></div>`;
   return html;
+}
+
+// ── Hiragana Reverse (see kana → pick English) ─────
+function renderHiraganaReverse(ex) {
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">What does this word mean?</p>
+      <p class="japanese-text">${escHtml(ex.japanese)}</p>
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (const opt of ex.options) {
+    html += `<button class="btn-option" data-answer="${escAttr(opt)}" onclick="window.__selectOption(this)">${escHtml(opt)}</button>`;
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
+}
+
+// ── Hiragana Listen (hear word → type romaji) ──────
+function renderHiraganaListen(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">Listen and type what you hear</p>
+      <button class="btn-play-audio" id="btn-play-learn-audio" style="font-size:2rem; background:none; border:1px solid var(--color-border); padding:0.75rem 1.5rem; cursor:pointer; margin:0.5rem 0;">&#9654;</button>
+    </div>
+    <div class="read-input-group">
+      <input type="text" id="read-input" placeholder="Type romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <button id="read-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupHiraganaListen(ex) {
+  const playBtn = exerciseCard.querySelector('#btn-play-learn-audio');
+  const input = exerciseCard.querySelector('#read-input');
+  const checkBtn = exerciseCard.querySelector('#read-check');
+
+  // Auto-play on load
+  setTimeout(() => speakJapanese(ex.japanese), 400);
+
+  // Replay on tap
+  if (playBtn) {
+    playBtn.addEventListener('click', () => speakJapanese(ex.japanese));
+  }
+
+  setTimeout(() => input.focus(), 500);
+
+  function checkAnswer() {
+    if (answered) return;
+    const userAnswer = normalizeRomaji(input.value);
+    const correct = normalizeRomaji(ex.correct_answer);
+    const isCorrect = userAnswer === correct;
+
+    answered = true;
+    input.disabled = true;
+    checkBtn.disabled = true;
+    input.classList.add(isCorrect ? 'input-correct' : 'input-incorrect');
+
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect);
+
+    if (!isCorrect) reinforceQueue.push(ex);
+
+    let breakdownHtml = ex.breakdown.map(b => `${b.char}(${b.romaji})`).join(' + ');
+    showExplanation(isCorrect, breakdownHtml + ` = ${ex.correct_answer} = "${ex.english}"`, isCorrect ? null : ex.correct_answer, ex);
+    showNextButton(isCorrect);
+  }
+
+  checkBtn.addEventListener('click', checkAnswer);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
+}
+
+// ── Hiragana Confusable (which character is X?) ────
+function renderHiraganaConfusable(ex) {
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Which one is "${escHtml(ex.targetRomaji)}"?</p>
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}" style="grid-template-columns: 1fr 1fr; max-width: 16rem; margin: 0 auto;">
+  `;
+  for (const opt of ex.options) {
+    html += `<button class="btn-option jp" data-answer="${escAttr(opt.kana)}" onclick="window.__selectOption(this)" style="font-size:2.5rem; padding:1.25rem;">${escHtml(opt.kana)}</button>`;
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
+}
+
+// ── Hiragana Build (arrange characters into word) ──
+function renderHiraganaBuild(ex) {
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Build the word for "${escHtml(ex.english)}"</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted);">${escHtml(ex.romaji)}</p>
+    </div>
+    <div class="sentence-build-area">
+      <div class="build-answer-zone" id="answer-zone"></div>
+      <div class="word-chips" id="word-chips">
+  `;
+  for (let i = 0; i < ex.characters.length; i++) {
+    html += `<span class="word-chip jp" data-word="${escAttr(ex.characters[i])}" data-index="${i}" style="font-size:1.5rem;">${escHtml(ex.characters[i])}</span>`;
+  }
+  html += `
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-check-build" disabled>Check</button>
+    <div id="explanation-slot"></div>
+  `;
+  return html;
+}
+
+function setupHiraganaBuild(ex) {
+  const chips = exerciseCard.querySelectorAll('.word-chip');
+  const answerZone = exerciseCard.querySelector('#answer-zone');
+  const btnCheck = exerciseCard.querySelector('#btn-check-build');
+  const selectedChars = [];
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (answered) return;
+      const char = chip.dataset.word;
+      const idx = parseInt(chip.dataset.index, 10);
+
+      if (chip.classList.contains('used')) {
+        chip.classList.remove('used');
+        const inAnswer = answerZone.querySelector(`[data-source-index="${idx}"]`);
+        if (inAnswer) inAnswer.remove();
+        const pos = selectedChars.findIndex(c => c.idx === idx);
+        if (pos > -1) selectedChars.splice(pos, 1);
+      } else {
+        chip.classList.add('used');
+        selectedChars.push({ char, idx });
+        const answerChip = document.createElement('span');
+        answerChip.className = 'word-chip in-answer jp';
+        answerChip.style.fontSize = '1.5rem';
+        answerChip.textContent = char;
+        answerChip.dataset.sourceIndex = idx;
+        answerChip.addEventListener('click', () => {
+          if (answered) return;
+          answerChip.remove();
+          chip.classList.remove('used');
+          const pos = selectedChars.findIndex(c => c.idx === idx);
+          if (pos > -1) selectedChars.splice(pos, 1);
+          btnCheck.disabled = selectedChars.length === 0;
+        });
+        answerZone.appendChild(answerChip);
+      }
+      btnCheck.disabled = selectedChars.length === 0;
+    });
+  });
+
+  btnCheck.addEventListener('click', () => {
+    if (answered) return;
+    answered = true;
+    btnCheck.disabled = true;
+    btnCheck.classList.add('hidden');
+
+    const userAnswer = selectedChars.map(c => c.char).join('');
+    const isCorrect = userAnswer === ex.correct_answer;
+
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect);
+
+    if (!isCorrect) reinforceQueue.push(ex);
+
+    // Visual feedback on answer zone
+    answerZone.style.borderColor = isCorrect ? 'var(--color-text)' : 'var(--color-vermillion)';
+
+    let breakdownHtml = ex.breakdown.map(b => `${b.char}(${b.romaji})`).join(' + ');
+    showExplanation(isCorrect, breakdownHtml + ` = ${ex.romaji} = "${ex.english}"`, isCorrect ? null : ex.correct_answer, ex);
+    showNextButton(isCorrect);
+  });
 }
 
 // ── Vocab Quiz ──────────────────────────────────────
@@ -3509,12 +3791,19 @@ function goToNextExercise() {
   // Every 2 exercises, inject a reinforcement if queued
   if (reinforceQueue.length > 0 && currentIndex % 2 === 0 && currentIndex < exercises.length) {
     const wrongEx = reinforceQueue.shift();
-    const history = loadSkillHistory();
-    const currentLessonIdx = history.currentLesson || 0;
-    const lessons = n5Content.lessons;
-    const lessonVocab = getVocabUpToLesson(lessons, currentLessonIdx).filter(v => v._lessonIdx === currentLessonIdx);
-    const lessonSentences = getSentencesUpToLesson(lessons, currentLessonIdx).filter(s => s._lessonIdx === currentLessonIdx);
-    const reinforcement = makeReinforcement(wrongEx, lessonVocab, lessonSentences);
+    let reinforcement = null;
+
+    if (currentMode === 'learn') {
+      reinforcement = makeLearningReinforcement(wrongEx);
+    } else {
+      const history = loadSkillHistory();
+      const currentLessonIdx = history.currentLesson || 0;
+      const lessons = n5Content.lessons;
+      const lessonVocab = getVocabUpToLesson(lessons, currentLessonIdx).filter(v => v._lessonIdx === currentLessonIdx);
+      const lessonSentences = getSentencesUpToLesson(lessons, currentLessonIdx).filter(s => s._lessonIdx === currentLessonIdx);
+      reinforcement = makeReinforcement(wrongEx, lessonVocab, lessonSentences);
+    }
+
     if (reinforcement) {
       reinforcement._isReinforcement = true;
       exercises.splice(currentIndex, 0, reinforcement);
@@ -3588,6 +3877,10 @@ function finishSession() {
     pronunciation: 'Pronunciation',
     hiragana_read: 'Read It',
     hiragana_spot: 'Spot It',
+    hiragana_reverse: 'Read & Choose',
+    hiragana_listen: 'Listen & Type',
+    hiragana_confusable: 'Look-Alikes',
+    hiragana_build: 'Build the Word',
   };
 
   const breakdownList = $('#breakdown-list');

@@ -274,4 +274,14 @@ const hiraganaGroups = [
   },
 ];
 
+/** Confusable character pairs — introduced after both characters are learned. */
+export const confusablePairs = [
+  { a: { kana: "き", romaji: "ki" }, b: { kana: "さ", romaji: "sa" }, hint: "き has a slight cross at top; さ curves left", availableAfterGroup: 3 },
+  { a: { kana: "は", romaji: "ha" }, b: { kana: "ほ", romaji: "ho" }, hint: "ほ has an extra bump on the right side", availableAfterGroup: 6 },
+  { a: { kana: "ぬ", romaji: "nu" }, b: { kana: "め", romaji: "me" }, hint: "ぬ has a tail that loops; め closes", availableAfterGroup: 7 },
+  { a: { kana: "ね", romaji: "ne" }, b: { kana: "れ", romaji: "re" }, hint: "ね loops at the bottom; れ doesn't", availableAfterGroup: 8 },
+  { a: { kana: "わ", romaji: "wa" }, b: { kana: "れ", romaji: "re" }, hint: "わ is rounder; れ has a sharper right stroke", availableAfterGroup: 9 },
+  { a: { kana: "る", romaji: "ru" }, b: { kana: "ろ", romaji: "ro" }, hint: "る has a loop at the bottom; ろ doesn't", availableAfterGroup: 8 },
+];
+
 export default hiraganaGroups;
