@@ -349,22 +349,34 @@
       margin-bottom: 0;
     }
 
-    .start-position {
+    .start-selector {
+      margin-top: 1.5rem;
+    }
+
+    .start-select {
       font-size: 0.8rem;
       font-family: var(--font-en);
       color: var(--color-text-secondary);
       letter-spacing: 0.02em;
-      margin-top: 1.5rem;
-      line-height: 1.5;
-      background: none;
+      background: transparent;
       border: none;
       border-bottom: 1px solid var(--color-border);
       padding: 0.25rem 0;
       cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: center;
+      text-align-last: center;
+      outline: none;
+      min-height: 36px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' fill='%23a0a0a0'%3E%3Cpath d='M0 0l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0 center;
+      padding-right: 14px;
       transition: color 0.2s, border-color 0.2s;
     }
 
-    .start-position:hover {
+    .start-select:focus {
       color: var(--color-text);
       border-bottom-color: var(--color-text-secondary);
     }
@@ -511,33 +523,6 @@
       margin-top: 0.125rem;
     }
 
-    .drawer-select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 0.9rem;
-      font-family: var(--font-en);
-      border: 1px solid var(--color-border);
-      border-radius: 0;
-      background: transparent;
-      color: var(--color-text);
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%23a0a0a0'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      cursor: pointer;
-      min-height: 44px;
-      letter-spacing: 0.05em;
-    }
-
-    .drawer-select:focus {
-      outline: none;
-      border-color: var(--color-text);
-    }
-
-    .drawer-select + .drawer-select {
-      margin-top: 0.75rem;
-    }
 
     /* ── Hiragana Intro Card ─────────────────────────── */
     .kana-intro-grid {
@@ -1242,7 +1227,10 @@
 
     .profile-welcome {
       text-align: center;
-      margin-top: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
     }
 
     .profile-welcome input[type="text"] {
@@ -1269,6 +1257,48 @@
     .profile-welcome input[type="text"]::placeholder {
       color: var(--color-text-muted);
       letter-spacing: 0.04em;
+    }
+
+    .btn-welcome-enter {
+      font-size: 0.7rem;
+      font-family: var(--font-en);
+      color: var(--color-text-muted);
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.25rem 0;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+      transition: color 0.2s;
+    }
+
+    .btn-welcome-enter:hover {
+      color: var(--color-text);
+    }
+
+    /* Apple-style slow reveal */
+    @keyframes startReveal {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .start-reveal {
+      animation: startReveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+
+    .start-reveal .start-selector {
+      animation: startReveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.15s both;
+    }
+
+    .start-reveal .start-actions {
+      animation: startReveal 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.3s both;
     }
 
     .profile-list {
@@ -1483,10 +1513,13 @@
       <button class="btn-settings" id="btn-gear" aria-label="Settings">&#8592;</button>
     </div>
 
-    <!-- Center: title + position (tappable) + begin -->
-    <div class="start-center">
+    <!-- Center: title + lesson selector + begin -->
+    <div class="start-center" id="start-center">
       <h1 class="app-title jp">ここすき</h1>
-      <button class="start-position" id="start-position"></button>
+      <div class="start-selector" id="start-selector">
+        <select id="lesson-select" class="start-select"></select>
+        <select id="group-select" class="start-select hidden"></select>
+      </div>
       <div class="start-actions" id="start-actions">
         <button class="btn-primary" id="btn-start-session">begin</button>
       </div>
@@ -1543,16 +1576,6 @@
       <div id="progression-section"></div>
     </div>
 
-    <!-- Selectors -->
-    <div class="drawer-section" id="drawer-selectors">
-      <div class="drawer-section-title">Course</div>
-      <select id="lesson-select" class="drawer-select">
-        <!-- Populated dynamically -->
-      </select>
-      <select id="group-select" class="drawer-select hidden">
-        <!-- Populated dynamically -->
-      </select>
-    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════════
@@ -2257,40 +2280,52 @@ function renderProfileSection() {
   const activeProfile = getActiveProfile();
 
   if (!activeProfile || profiles.length === 0) {
-    // No profile — show title + single input, nothing else
+    // No profile — just input + enter, nothing else
     profileSection.classList.remove('hidden');
     profileSection.innerHTML = `
       <div class="profile-welcome">
         <input type="text" id="input-profile-name" placeholder="your name" maxlength="20">
+        <button class="btn-welcome-enter" id="btn-welcome-enter">enter</button>
       </div>
     `;
-    // Hide main start UI until profile is created
-    $('#start-actions').classList.add('hidden');
+    // Hide everything else
+    const startCenter = $('#start-center');
+    startCenter.classList.add('hidden');
     $('#start-topbar').classList.add('hidden');
     $('#mode-selector').classList.add('hidden');
-    document.querySelector('.start-center .start-position').style.display = 'none';
 
     const inputName = $('#input-profile-name');
     inputName.focus();
 
-    inputName.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const name = inputName.value.trim();
-        if (name) {
-          createProfile(name);
-          renderStartScreen();
-        }
+    const doCreate = () => {
+      const name = inputName.value.trim();
+      if (name) {
+        createProfile(name);
+        // Apple fade-in: hide welcome, reveal main with animation
+        profileSection.classList.add('hidden');
+        startCenter.classList.remove('hidden');
+        startCenter.classList.add('start-reveal');
+        $('#start-topbar').classList.remove('hidden');
+        $('#mode-selector').classList.remove('hidden');
+        $('#mode-selector').classList.add('start-reveal');
+        $('#start-topbar').classList.add('start-reveal');
+        renderStartScreen();
       }
+    };
+
+    inputName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doCreate();
     });
+    $('#btn-welcome-enter').addEventListener('click', doCreate);
     return;
   }
 
   // Profile exists — show main UI, hide welcome
   profileSection.classList.add('hidden');
-  $('#start-actions').classList.remove('hidden');
+  const startCenter = $('#start-center');
+  startCenter.classList.remove('hidden');
   $('#start-topbar').classList.remove('hidden');
   $('#mode-selector').classList.remove('hidden');
-  document.querySelector('.start-center .start-position').style.display = '';
 
   // Update topbar name
   $('#topbar-profile-name').textContent = escHtml(activeProfile);
@@ -2491,7 +2526,7 @@ function renderLessonSelector() {
   n5Content.lessons.forEach((lesson, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `Phase ${lesson.phase}: ${lesson.title}`;
+    opt.textContent = `Lesson ${i + 1}: ${lesson.title}`;
     if (i === currentLesson) opt.selected = true;
     select.appendChild(opt);
   });
@@ -2521,32 +2556,6 @@ function renderStartScreen() {
   renderLessonSelector();
   renderGroupSelector();
   updateModeUI();
-  updateStartPosition();
-}
-
-function updateStartPosition() {
-  const positionEl = $('#start-position');
-  if (!positionEl) return;
-  const history = loadSkillHistory();
-
-  if (currentMode === 'learn') {
-    const groupIdx = history.currentGroup || 0;
-    const group = hiraganaGroups[groupIdx];
-    positionEl.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
-  } else if (currentMode === 'learn-katakana') {
-    const groupIdx = history.currentKatakanaGroup || 0;
-    const group = katakanaGroups[groupIdx];
-    positionEl.textContent = `Katakana \u2014 Group ${group.id}: ${group.name}`;
-  } else {
-    const lessons = n5Content.lessons;
-    const currentLessonIdx = history.currentLesson || 0;
-    const currentLesson = lessons[currentLessonIdx];
-    const phaseLabels = { 1: 'Foundation', 2: 'Structure', 3: 'Flow', 4: 'Independence' };
-    const phaseLabel = phaseLabels[currentLesson.phase] || '';
-    positionEl.textContent = currentLesson.genki_ref === currentLesson.title
-      ? currentLesson.title
-      : `${currentLesson.genki_ref}: ${currentLesson.title}`;
-  }
 }
 
 // ── Mode switching ──────────────────────────────────
@@ -2567,7 +2576,7 @@ function updateModeUI() {
   btnLearnKatakana.classList.toggle('active', currentMode === 'learn-katakana');
   btnPractice.classList.toggle('active', currentMode === 'practice');
 
-  // Toggle which selectors show in drawer
+  // Toggle which selector shows on front page
   if (currentMode === 'learn' || currentMode === 'learn-katakana') {
     lessonSelect.classList.add('hidden');
     groupSelect.classList.remove('hidden');
@@ -2575,8 +2584,6 @@ function updateModeUI() {
     lessonSelect.classList.remove('hidden');
     groupSelect.classList.add('hidden');
   }
-
-  updateStartPosition();
 }
 
 function renderGroupSelector() {
@@ -3930,15 +3937,6 @@ $('#btn-gear').addEventListener('click', () => {
 });
 $('#btn-close-drawer').addEventListener('click', () => {
   settingsDrawer.classList.remove('open');
-});
-
-// Position text opens drawer scrolled to course selectors
-$('#start-position').addEventListener('click', () => {
-  settingsDrawer.classList.add('open');
-  const selectors = $('#drawer-selectors');
-  if (selectors) {
-    setTimeout(() => selectors.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  }
 });
 
 // ══════════════════════════════════════════════════════
