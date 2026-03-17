@@ -2926,20 +2926,8 @@ window.__selectOption = function(btn) {
 };
 
 // ── Gemini API for mistake explanations ─────────────
-function getGeminiApiKey() {
-  let key = localStorage.getItem('renshu_gemini_key');
-  if (!key) {
-    key = prompt('Enter your Gemini API key (starts with AIzaSy...):\n\nGet one free at https://aistudio.google.com/apikey');
-    if (key && key.trim()) {
-      localStorage.setItem('renshu_gemini_key', key.trim());
-    }
-  }
-  return key ? key.trim() : null;
-}
-function getGeminiUrl() {
-  const key = getGeminiApiKey();
-  return key ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}` : null;
-}
+const GEMINI_API_KEY = 'AIzaSyAg6Eo0yGJaeuD4f5fVM0HfL3cmOQyvdUI';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 async function getGeminiExplanation(exercise, userAnswer, correctAnswer) {
   const ex = exercise;
@@ -2961,9 +2949,7 @@ Correct answer: ${correctAnswer}
 ${ex.explanation ? 'Context: ' + ex.explanation : ''}`;
 
   try {
-    const url = getGeminiUrl();
-    if (!url) return null;
-    const res = await fetch(url, {
+    const res = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
