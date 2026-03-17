@@ -1462,6 +1462,8 @@
     <div class="session-footer">
       <button class="btn-primary" id="btn-action">Skip</button>
     </div>
+
+    <div id="session-review-log"></div>
   </div>
 
   <!-- ══════════════════════════════════════════════════
@@ -2376,6 +2378,9 @@ async function startSession() {
   sessionResults = [];
   answered = false;
 
+  const log = document.getElementById('session-review-log');
+  if (log) log.innerHTML = '';
+
   showView('view-session');
   renderExercise();
 }
@@ -2934,15 +2939,17 @@ function showExplanation(isCorrect, explanation, correctAnswer) {
   }
   html += `</div>`;
 
-  // Insert explanation below the sticky footer
-  const footer = document.querySelector('.session-footer');
-  if (footer) {
-    const el = document.createElement('div');
-    el.innerHTML = html;
-    footer.insertAdjacentElement('afterend', el.firstElementChild);
-  } else {
-    const slot = exerciseCard.querySelector('#explanation-slot');
-    if (slot) slot.innerHTML = html;
+  // Append to review log below the sticky footer
+  const log = document.getElementById('session-review-log');
+  if (log) {
+    if (log.children.length > 0) {
+      const divider = document.createElement('hr');
+      divider.style.cssText = 'border:none;border-top:1px solid var(--color-border-light);margin:0.75rem 0;';
+      log.appendChild(divider);
+    }
+    const entry = document.createElement('div');
+    entry.innerHTML = html;
+    log.appendChild(entry);
   }
 }
 
