@@ -2610,11 +2610,8 @@ function setupSentenceBuild(ex) {
       answerZone.classList.add('incorrect-zone');
     }
 
-    // Brief flash, then swap to explanation
-    setTimeout(() => {
-      showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
-      showNextButton();
-    }, 600);
+    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
+    showNextButton();
   });
 }
 
@@ -2919,22 +2916,12 @@ window.__selectOption = function(btn) {
     listeningRomajiSlot.classList.remove('hidden');
   }
 
-  // Brief flash of correct/incorrect highlight, then swap to explanation
-  setTimeout(() => {
-    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
-    showNextButton();
-  }, 600);
+  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
+  showNextButton();
 };
 
 // ── Explanation ─────────────────────────────────────
 function showExplanation(isCorrect, explanation, correctAnswer) {
-  // Replace options grid with explanation (Option A: no scroll needed)
-  const optionsGrid = exerciseCard.querySelector('.options-grid');
-  const wordBank = exerciseCard.querySelector('.word-bank');
-  const answerZone = exerciseCard.querySelector('.answer-zone');
-  const btnCheck = exerciseCard.querySelector('#btn-check-sentence');
-  const target = optionsGrid || wordBank;
-
   let html = `<div class="explanation-box">`;
   html += `<strong style="color:${isCorrect ? 'var(--color-correct)' : 'var(--color-incorrect)'}">`;
   html += isCorrect ? 'Correct!' : 'Incorrect';
@@ -2947,14 +2934,13 @@ function showExplanation(isCorrect, explanation, correctAnswer) {
   }
   html += `</div>`;
 
-  if (target) {
-    // Replace options with explanation
-    target.outerHTML = html;
-    // Clean up sentence build UI if present
-    if (answerZone) answerZone.remove();
-    if (btnCheck) btnCheck.remove();
+  // Insert explanation below the sticky footer
+  const footer = document.querySelector('.session-footer');
+  if (footer) {
+    const el = document.createElement('div');
+    el.innerHTML = html;
+    footer.insertAdjacentElement('afterend', el.firstElementChild);
   } else {
-    // Fallback: use explanation slot
     const slot = exerciseCard.querySelector('#explanation-slot');
     if (slot) slot.innerHTML = html;
   }
