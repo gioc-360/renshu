@@ -284,17 +284,58 @@
     }
 
     /* ══════════════════════════════════════════════════
-       START SCREEN
+       START SCREEN — Single Viewport
        ══════════════════════════════════════════════════ */
     #view-start {
       justify-content: center;
       align-items: center;
-      padding-top: 4rem;
-      padding-bottom: 2rem;
-      gap: 3rem;
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      position: relative;
     }
 
-    .start-header {
+    /* ── Top bar: profile name + gear ── */
+    .start-topbar {
+      position: absolute;
+      top: 1.5rem;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .topbar-profile-name {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-gear {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .btn-gear:hover {
+      color: var(--color-text);
+    }
+
+    /* ── Center content ── */
+    .start-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
       text-align: center;
     }
 
@@ -307,57 +348,129 @@
       margin-bottom: 0;
     }
 
-    .app-subtitle {
+    .start-position {
       font-size: 0.8rem;
-      color: var(--color-text-muted);
-      font-weight: 400;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-top: 0.5rem;
-    }
-
-    .level-badge {
-      display: inline-block;
-      margin-top: 2rem;
-      padding: 0;
-      background: transparent;
-      color: var(--color-text-muted);
-      border-radius: 0;
-      font-size: 0.8rem;
-      font-weight: 400;
-      letter-spacing: 0.1em;
+      color: var(--color-text-secondary);
+      letter-spacing: 0.02em;
+      margin-top: 1.5rem;
+      line-height: 1.5;
     }
 
     .start-actions {
-      width: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
+      margin-top: 3rem;
     }
 
-    /* Start Session button — special treatment */
     .start-actions .btn-primary {
       display: inline-block;
       width: auto;
-      padding: 1rem 3rem;
-      font-size: 0.875rem;
+      padding: 0.5rem 0;
+      font-size: 0.75rem;
       font-weight: 400;
-      color: var(--color-text);
+      color: var(--color-text-muted);
       background: transparent;
-      border: 1px solid var(--color-text);
-      border-bottom: 1px solid var(--color-text);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      letter-spacing: 0.1em;
+      text-transform: lowercase;
     }
 
     .start-actions .btn-primary:hover {
       opacity: 0.7;
     }
 
-    .stats-grid {
+    /* ── Mode tabs — bottom of viewport ── */
+    .mode-selector {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 0;
+      right: 0;
       display: flex;
       justify-content: center;
+      gap: 1.25rem;
+    }
+    .mode-selector button {
+      background: none;
+      border: none;
+      font-family: var(--font-en);
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+      padding: 0.25rem 0;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .mode-selector button.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-text);
+    }
+
+    /* ── Drawer (settings/details panel) ── */
+    .settings-drawer {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 100%;
+      max-width: 440px;
+      height: 100dvh;
+      background: var(--color-bg);
+      z-index: 100;
+      transition: right 0.3s ease-out;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .settings-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-header h2 {
+      font-size: 0.8rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text);
+    }
+
+    .btn-close-drawer {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--color-text);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .drawer-section {
+      border-top: 1px solid var(--color-border-light);
+      padding-top: 1.25rem;
+    }
+
+    .drawer-section-title {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .stats-grid {
+      display: flex;
+      justify-content: flex-start;
       gap: 2rem;
       width: 100%;
     }
@@ -366,7 +479,7 @@
       background: transparent;
       border-radius: 0;
       padding: 0;
-      text-align: center;
+      text-align: left;
       border: none;
     }
 
@@ -385,21 +498,7 @@
       margin-top: 0.125rem;
     }
 
-    .level-selector {
-      width: 100%;
-    }
-
-    .level-selector label {
-      display: block;
-      font-size: 0.7rem;
-      color: var(--color-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-
-    .level-selector select {
+    .drawer-select {
       width: 100%;
       padding: 0.75rem 1rem;
       font-size: 0.9rem;
@@ -418,73 +517,13 @@
       letter-spacing: 0.05em;
     }
 
-    .level-selector select:focus {
+    .drawer-select:focus {
       outline: none;
       border-color: var(--color-text);
     }
 
-    .lesson-selector {
-      width: 100%;
-      margin-top: 1rem;
-    }
-
-    .lesson-selector label {
-      display: block;
-      font-size: 0.7rem;
-      color: var(--color-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-
-    .lesson-selector select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 0.9rem;
-      font-family: var(--font-en);
-      border: 1px solid var(--color-border);
-      border-radius: 0;
-      background: transparent;
-      color: var(--color-text);
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='%23a0a0a0'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      cursor: pointer;
-      min-height: 44px;
-      letter-spacing: 0.05em;
-    }
-
-    .lesson-selector select:focus {
-      outline: none;
-      border-color: var(--color-text);
-    }
-
-    /* ── Mode Selector ───────────────────────────────── */
-    .mode-selector {
-      display: flex;
-      justify-content: center;
-      gap: 1.25rem;
-      margin-top: 1.25rem;
-      margin-bottom: 0.25rem;
-    }
-    .mode-selector button {
-      background: none;
-      border: none;
-      font-family: var(--font-en);
-      font-size: 0.75rem;
-      letter-spacing: 0.04em;
-      color: var(--color-text-muted);
-      padding: 0.25rem 0;
-      cursor: pointer;
-      border-bottom: 1px solid transparent;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .mode-selector button.active {
-      color: var(--color-text);
-      border-bottom-color: var(--color-text);
+    .drawer-select + .drawer-select {
+      margin-top: 0.75rem;
     }
 
     /* ── Hiragana Intro Card ─────────────────────────── */
@@ -1179,9 +1218,13 @@
       }
     }
 
-    /* ── Profile Section ─────────────────────────────── */
+    /* ── Profile Section (welcome overlay when no profile) ── */
     .profile-section {
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .profile-welcome {
@@ -1242,65 +1285,11 @@
       background: transparent;
     }
 
-    .profile-active {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-      background: transparent;
-      border-radius: 0;
-      padding: 0;
-      border: none;
-    }
-
-    .profile-active .profile-name {
-      font-size: 0.85rem;
-      font-weight: 400;
-      color: var(--color-text-muted);
-    }
-
-    .profile-active .btn-switch-profile {
-      padding: 0;
-      font-size: 0.7rem;
-      font-weight: 400;
-      color: var(--color-text-muted);
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid var(--color-border);
-      border-radius: 0;
-      min-height: auto;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .profile-active .btn-switch-profile:hover {
-      border-bottom-color: var(--color-text);
-      background: transparent;
-      opacity: 0.7;
-    }
-
-    .profile-switcher {
-      background: transparent;
-      border-radius: 0;
-      padding: 1.5rem 0;
-      border: none;
-      border-top: 1px solid var(--color-border-light);
-      border-bottom: 1px solid var(--color-border-light);
-    }
-
-    .profile-switcher h3 {
-      font-size: 0.85rem;
-      color: var(--color-text);
-      margin-bottom: 1.5rem;
-      font-weight: 400;
-      text-align: center;
-    }
-
     .profile-list {
       display: flex;
       flex-direction: column;
       gap: 0;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0;
     }
 
     .profile-list-btn {
@@ -1329,12 +1318,12 @@
       color: var(--color-text);
     }
 
-    .profile-switcher .profile-input-row {
+    #drawer-profile-section .profile-input-row {
       display: flex;
       gap: 0.75rem;
     }
 
-    .profile-switcher input[type="text"] {
+    #drawer-profile-section input[type="text"] {
       flex: 1;
       padding: 0.75rem 0;
       font-size: 0.9rem;
@@ -1349,11 +1338,11 @@
       transition: border-color var(--transition-fast);
     }
 
-    .profile-switcher input[type="text"]:focus {
+    #drawer-profile-section input[type="text"]:focus {
       border-bottom-color: var(--color-text);
     }
 
-    .profile-switcher .btn-add-profile {
+    #drawer-profile-section .btn-add-profile {
       padding: 0.625rem 1rem;
       font-size: 0.8rem;
       font-weight: 400;
@@ -1365,25 +1354,6 @@
       min-height: 44px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-    }
-
-    .profile-switcher .btn-cancel-switch {
-      display: block;
-      width: 100%;
-      margin-top: 0.75rem;
-      padding: 0.5rem;
-      font-size: 0.8rem;
-      color: var(--color-text-muted);
-      background: transparent;
-      border-radius: 0;
-      min-height: 40px;
-      letter-spacing: 0.05em;
-    }
-
-    .profile-switcher .btn-cancel-switch:hover {
-      color: var(--color-text-secondary);
-      background: transparent;
-      opacity: 0.7;
     }
 
     /* ── Progression Section ─────────────────────────── */
@@ -1520,70 +1490,80 @@
        VIEW: START SCREEN
        ══════════════════════════════════════════════════ -->
   <div id="view-start" class="view active">
-    <header class="start-header">
+
+    <!-- Top bar: profile + gear -->
+    <div class="start-topbar" id="start-topbar">
+      <span class="topbar-profile-name" id="topbar-profile-name"></span>
+      <button class="btn-gear" id="btn-gear" aria-label="Settings">&#9881;</button>
+    </div>
+
+    <!-- Center: title + position + begin -->
+    <div class="start-center">
       <h1 class="app-title jp">ここすき</h1>
-      <p class="app-title" style="font-size:1.25rem; color:var(--color-text-secondary); font-family:var(--font-en); margin-top:-0.25rem;">Kokosuki</p>
-      <p class="app-subtitle">I like this</p>
-      <div class="level-badge" id="level-badge">N5</div>
-      <div class="lesson-indicator" id="lesson-indicator" style="margin-top:0.75rem; font-size:0.8rem; color:var(--color-text-secondary); letter-spacing:0.02em;"></div>
-    </header>
-
-    <!-- Profile Section -->
-    <div class="profile-section" id="profile-section">
-      <!-- Dynamically populated by renderProfileSection() -->
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="stat-streak">0</div>
-        <div class="stat-label">Streak</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-sessions">0</div>
-        <div class="stat-label">Sessions</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-weakest">--</div>
-        <div class="stat-label">Weakest</div>
+      <div class="start-position" id="start-position"></div>
+      <div class="start-actions" id="start-actions">
+        <button class="btn-primary" id="btn-start-session">Begin</button>
       </div>
     </div>
 
-    <!-- Progression Section -->
-    <div class="progression-section" id="progression-section">
-      <!-- Dynamically populated by renderProgressionSection() -->
-    </div>
-
-    <div class="start-actions">
-      <button class="btn-primary" id="btn-start-session">Start Session</button>
-    </div>
-
-    <div class="level-selector">
-      <label for="level-select">Level</label>
-      <select id="level-select">
-        <option value="N5" selected>N5 - Beginner</option>
-        <option value="N4" disabled>N4 - Coming Soon</option>
-        <option value="N3" disabled>N3 - Coming Soon</option>
-        <option value="N2" disabled>N2 - Coming Soon</option>
-        <option value="N1" disabled>N1 - Coming Soon</option>
-      </select>
-    </div>
-
+    <!-- Mode tabs at bottom -->
     <div class="mode-selector" id="mode-selector">
-      <button id="btn-mode-learn" onclick="window.__setMode('learn')">Learn Hiragana</button>
-      <button id="btn-mode-learn-katakana" onclick="window.__setMode('learn-katakana')">Learn Katakana</button>
+      <button id="btn-mode-learn" onclick="window.__setMode('learn')">Hiragana</button>
+      <button id="btn-mode-learn-katakana" onclick="window.__setMode('learn-katakana')">Katakana</button>
       <button id="btn-mode-practice" class="active" onclick="window.__setMode('practice')">Practice</button>
     </div>
 
-    <div class="lesson-selector" id="lesson-selector-container">
-      <label for="lesson-select">Lesson</label>
-      <select id="lesson-select">
-        <!-- Populated dynamically -->
-      </select>
+    <!-- Profile creation (shown only when no profile exists) -->
+    <div class="profile-section hidden" id="profile-section"></div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SETTINGS DRAWER (slides in from right)
+       ══════════════════════════════════════════════════ -->
+  <div class="settings-drawer" id="settings-drawer">
+    <div class="drawer-header">
+      <h2>Settings</h2>
+      <button class="btn-close-drawer" id="btn-close-drawer" aria-label="Close">&times;</button>
     </div>
 
-    <div class="lesson-selector hidden" id="group-selector-container">
-      <label for="group-select">Group</label>
-      <select id="group-select">
+    <!-- Profile -->
+    <div class="drawer-section" id="drawer-profile-section">
+      <!-- Dynamically populated -->
+    </div>
+
+    <!-- Stats -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Stats</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-streak">0</div>
+          <div class="stat-label">Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-sessions">0</div>
+          <div class="stat-label">Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-weakest">--</div>
+          <div class="stat-label">Weakest</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Progress</div>
+      <div id="progression-section"></div>
+    </div>
+
+    <!-- Selectors -->
+    <div class="drawer-section" id="drawer-selectors">
+      <div class="drawer-section-title">Course</div>
+      <select id="lesson-select" class="drawer-select">
+        <!-- Populated dynamically -->
+      </select>
+      <select id="group-select" class="drawer-select hidden">
         <!-- Populated dynamically -->
       </select>
     </div>
@@ -2088,9 +2068,6 @@ function createProfile(name) {
   setActiveProfile(name);
 }
 
-// Profile switching state
-let showingProfileSwitcher = false;
-
 // ══════════════════════════════════════════════════════
 // State
 // ══════════════════════════════════════════════════════
@@ -2294,7 +2271,8 @@ function renderProfileSection() {
   const activeProfile = getActiveProfile();
 
   if (!activeProfile || profiles.length === 0) {
-    // No profile — show welcome/create prompt
+    // No profile — show centered welcome on main page
+    profileSection.classList.remove('hidden');
     profileSection.innerHTML = `
       <div class="profile-welcome">
         <h3>Welcome! Enter your name to start</h3>
@@ -2304,14 +2282,13 @@ function renderProfileSection() {
         </div>
       </div>
     `;
-    // Hide stats and progression until profile is created
-    $('.stats-grid').classList.add('hidden');
-    $('#progression-section').classList.add('hidden');
-    $('.start-actions').classList.add('hidden');
-    $('.level-selector').classList.add('hidden');
-    $('#lesson-selector-container').classList.add('hidden');
+    // Hide main start UI until profile is created
+    $('#start-actions').classList.add('hidden');
+    $('#start-topbar').classList.add('hidden');
+    $('#mode-selector').classList.add('hidden');
+    document.querySelector('.start-center .app-title').style.display = 'none';
+    document.querySelector('.start-center .start-position').style.display = 'none';
 
-    // Wire up create button
     const btnCreate = $('#btn-create-profile');
     const inputName = $('#input-profile-name');
 
@@ -2319,7 +2296,7 @@ function renderProfileSection() {
       const name = inputName.value.trim();
       if (name) {
         createProfile(name);
-        showingProfileSwitcher = false;
+
         renderStartScreen();
       }
     });
@@ -2329,7 +2306,7 @@ function renderProfileSection() {
         const name = inputName.value.trim();
         if (name) {
           createProfile(name);
-          showingProfileSwitcher = false;
+  
           renderStartScreen();
         }
       }
@@ -2337,80 +2314,66 @@ function renderProfileSection() {
     return;
   }
 
-  // Profile exists — show everything
-  $('.stats-grid').classList.remove('hidden');
-  $('#progression-section').classList.remove('hidden');
-  $('.start-actions').classList.remove('hidden');
-  $('.level-selector').classList.remove('hidden');
-  $('#lesson-selector-container').classList.remove('hidden');
+  // Profile exists — show main UI, hide welcome
+  profileSection.classList.add('hidden');
+  $('#start-actions').classList.remove('hidden');
+  $('#start-topbar').classList.remove('hidden');
+  $('#mode-selector').classList.remove('hidden');
+  document.querySelector('.start-center .app-title').style.display = '';
+  document.querySelector('.start-center .start-position').style.display = '';
 
-  if (showingProfileSwitcher) {
-    // Show profile switcher view
-    let html = `<div class="profile-switcher"><h3>Switch Profile</h3><div class="profile-list">`;
-    for (const name of profiles) {
-      const isActive = name === activeProfile ? ' active-profile' : '';
-      html += `<button class="profile-list-btn${isActive}" data-profile-name="${escAttr(name)}">${escHtml(name)}${name === activeProfile ? ' (current)' : ''}</button>`;
-    }
-    html += `</div>`;
-    html += `<div class="profile-input-row">
-      <input type="text" id="input-new-profile" placeholder="New profile name" maxlength="20">
-      <button class="btn-add-profile" id="btn-add-new-profile">Add</button>
-    </div>`;
-    html += `<button class="btn-cancel-switch" id="btn-cancel-switch">Cancel</button>`;
-    html += `</div>`;
-    profileSection.innerHTML = html;
+  // Update topbar name
+  $('#topbar-profile-name').textContent = escHtml(activeProfile);
 
-    // Wire up profile selection buttons
-    profileSection.querySelectorAll('.profile-list-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const name = btn.dataset.profileName;
-        setActiveProfile(name);
-        showingProfileSwitcher = false;
-        renderStartScreen();
-      });
+  // Render profile switcher in drawer
+  renderDrawerProfile();
+}
+
+function renderDrawerProfile() {
+  const section = $('#drawer-profile-section');
+  const profiles = getProfileList();
+  const activeProfile = getActiveProfile();
+
+  let html = `<div class="drawer-section-title">Profile</div>`;
+  html += `<div class="profile-list">`;
+  for (const name of profiles) {
+    const isActive = name === activeProfile ? ' active-profile' : '';
+    html += `<button class="profile-list-btn${isActive}" data-profile-name="${escAttr(name)}">${escHtml(name)}${name === activeProfile ? ' \u2713' : ''}</button>`;
+  }
+  html += `</div>`;
+  html += `<div class="profile-input-row" style="margin-top:0.75rem;">
+    <input type="text" id="input-new-profile" placeholder="New profile" maxlength="20">
+    <button class="btn-add-profile" id="btn-add-new-profile">Add</button>
+  </div>`;
+  section.innerHTML = html;
+
+  // Wire up profile selection
+  section.querySelectorAll('.profile-list-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.profileName;
+      setActiveProfile(name);
+      renderStartScreen();
     });
+  });
 
-    // Wire up add new profile
-    const btnAddNew = $('#btn-add-new-profile');
-    const inputNew = $('#input-new-profile');
-    btnAddNew.addEventListener('click', () => {
+  // Wire up add new profile
+  const btnAddNew = $('#btn-add-new-profile');
+  const inputNew = $('#input-new-profile');
+  btnAddNew.addEventListener('click', () => {
+    const name = inputNew.value.trim();
+    if (name) {
+      createProfile(name);
+      renderStartScreen();
+    }
+  });
+  inputNew.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
       const name = inputNew.value.trim();
       if (name) {
         createProfile(name);
-        showingProfileSwitcher = false;
         renderStartScreen();
       }
-    });
-    inputNew.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const name = inputNew.value.trim();
-        if (name) {
-          createProfile(name);
-          showingProfileSwitcher = false;
-          renderStartScreen();
-        }
-      }
-    });
-
-    // Wire up cancel
-    $('#btn-cancel-switch').addEventListener('click', () => {
-      showingProfileSwitcher = false;
-      renderProfileSection();
-    });
-    return;
-  }
-
-  // Normal view: show current profile
-  profileSection.innerHTML = `
-    <div class="profile-active">
-      <span class="profile-name">${escHtml(activeProfile)}</span>
-      <button class="btn-switch-profile" id="btn-switch-profile">Switch Profile</button>
-    </div>
-  `;
-
-  $('#btn-switch-profile').addEventListener('click', () => {
-    showingProfileSwitcher = true;
-    renderProfileSection();
+    }
   });
 }
 
@@ -2576,14 +2539,42 @@ function renderStartScreen() {
   renderProfileSection();
   const activeProfile = getActiveProfile();
   if (!activeProfile) return;
+
+  // Stats (in drawer)
   const stats = loadStats();
   $('#stat-streak').textContent = stats.streak || 0;
   $('#stat-sessions').textContent = stats.totalSessions || 0;
   $('#stat-weakest').textContent = getWeakestSkill();
+
+  // Progression (in drawer)
   renderProgressionSection();
   renderLessonSelector();
   renderGroupSelector();
   updateModeUI();
+  updateStartPosition();
+}
+
+function updateStartPosition() {
+  const positionEl = $('#start-position');
+  if (!positionEl) return;
+  const history = loadSkillHistory();
+
+  if (currentMode === 'learn') {
+    const groupIdx = history.currentGroup || 0;
+    const group = hiraganaGroups[groupIdx];
+    positionEl.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
+  } else if (currentMode === 'learn-katakana') {
+    const groupIdx = history.currentKatakanaGroup || 0;
+    const group = katakanaGroups[groupIdx];
+    positionEl.textContent = `Katakana \u2014 Group ${group.id}: ${group.name}`;
+  } else {
+    const lessons = n5Content.lessons;
+    const currentLessonIdx = history.currentLesson || 0;
+    const currentLesson = lessons[currentLessonIdx];
+    const phaseLabels = { 1: 'Foundation', 2: 'Structure', 3: 'Flow', 4: 'Independence' };
+    const phaseLabel = phaseLabels[currentLesson.phase] || '';
+    positionEl.textContent = `${currentLesson.genki_ref}: ${currentLesson.title}`;
+  }
 }
 
 // ── Mode switching ──────────────────────────────────
@@ -2597,41 +2588,23 @@ function updateModeUI() {
   const btnLearn = $('#btn-mode-learn');
   const btnLearnKatakana = $('#btn-mode-learn-katakana');
   const btnPractice = $('#btn-mode-practice');
-  const lessonContainer = $('#lesson-selector-container');
-  const groupContainer = $('#group-selector-container');
-  const indicator = $('#lesson-indicator');
-  const levelBadge = $('#level-badge');
+  const lessonSelect = $('#lesson-select');
+  const groupSelect = $('#group-select');
 
   btnLearn.classList.toggle('active', currentMode === 'learn');
   btnLearnKatakana.classList.toggle('active', currentMode === 'learn-katakana');
   btnPractice.classList.toggle('active', currentMode === 'practice');
 
-  if (currentMode === 'learn') {
-    lessonContainer.classList.add('hidden');
-    groupContainer.classList.remove('hidden');
-    if (indicator) {
-      const history = loadSkillHistory();
-      const groupIdx = history.currentGroup || 0;
-      const group = hiraganaGroups[groupIdx];
-      indicator.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
-    }
-    if (levelBadge) levelBadge.textContent = 'ひらがな';
-  } else if (currentMode === 'learn-katakana') {
-    lessonContainer.classList.add('hidden');
-    groupContainer.classList.remove('hidden');
-    if (indicator) {
-      const history = loadSkillHistory();
-      const groupIdx = history.currentKatakanaGroup || 0;
-      const group = katakanaGroups[groupIdx];
-      indicator.textContent = `Katakana \u2014 Group ${group.id}: ${group.name}`;
-    }
-    if (levelBadge) levelBadge.textContent = 'カタカナ';
+  // Toggle which selectors show in drawer
+  if (currentMode === 'learn' || currentMode === 'learn-katakana') {
+    lessonSelect.classList.add('hidden');
+    groupSelect.classList.remove('hidden');
   } else {
-    lessonContainer.classList.remove('hidden');
-    groupContainer.classList.add('hidden');
-    if (levelBadge) levelBadge.textContent = 'N5';
-    // lesson indicator updated by renderProgressionSection
+    lessonSelect.classList.remove('hidden');
+    groupSelect.classList.add('hidden');
   }
+
+  updateStartPosition();
 }
 
 function renderGroupSelector() {
@@ -2684,6 +2657,10 @@ async function startSession() {
 
   const log = document.getElementById('session-review-log');
   if (log) log.innerHTML = '';
+
+  // Close drawer if open
+  const drawer = document.getElementById('settings-drawer');
+  if (drawer) drawer.classList.remove('open');
 
   showView('view-session');
   renderExercise();
@@ -3972,6 +3949,15 @@ btnPracticeAgain.addEventListener('click', () => {
 btnBackHome.addEventListener('click', () => {
   renderStartScreen();
   showView('view-start');
+});
+
+// ── Settings drawer ──────────────────────────────────
+const settingsDrawer = $('#settings-drawer');
+$('#btn-gear').addEventListener('click', () => {
+  settingsDrawer.classList.add('open');
+});
+$('#btn-close-drawer').addEventListener('click', () => {
+  settingsDrawer.classList.remove('open');
 });
 
 // ══════════════════════════════════════════════════════
