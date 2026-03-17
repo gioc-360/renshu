@@ -311,7 +311,7 @@
       letter-spacing: 0.04em;
     }
 
-    .btn-gear {
+    .btn-settings {
       width: 36px;
       height: 36px;
       display: flex;
@@ -320,14 +320,15 @@
       background: none;
       border: none;
       color: var(--color-text-muted);
-      font-size: 1.1rem;
+      font-size: 0.85rem;
       cursor: pointer;
       padding: 0;
       transition: color 0.2s;
+      opacity: 0.4;
     }
 
-    .btn-gear:hover {
-      color: var(--color-text);
+    .btn-settings:hover {
+      opacity: 0.7;
     }
 
     /* ── Center content ── */
@@ -350,10 +351,22 @@
 
     .start-position {
       font-size: 0.8rem;
+      font-family: var(--font-en);
       color: var(--color-text-secondary);
       letter-spacing: 0.02em;
       margin-top: 1.5rem;
       line-height: 1.5;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.25rem 0;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .start-position:hover {
+      color: var(--color-text);
+      border-bottom-color: var(--color-text-secondary);
     }
 
     .start-actions {
@@ -1228,29 +1241,13 @@
     }
 
     .profile-welcome {
-      background: transparent;
-      border-radius: 0;
-      padding: 0;
-      border: none;
       text-align: center;
-    }
-
-    .profile-welcome h3 {
-      font-size: 0.9rem;
-      color: var(--color-text);
-      margin-bottom: 1rem;
-      font-weight: 400;
-    }
-
-    .profile-welcome .profile-input-row {
-      display: flex;
-      gap: 0.75rem;
+      margin-top: 2rem;
     }
 
     .profile-welcome input[type="text"] {
-      flex: 1;
-      padding: 0.75rem 0;
-      font-size: 1rem;
+      padding: 0.5rem 0;
+      font-size: 0.85rem;
       font-family: var(--font-en);
       border: none;
       border-bottom: 1px solid var(--color-border);
@@ -1258,7 +1255,10 @@
       background: transparent;
       color: var(--color-text);
       outline: none;
+      text-align: center;
+      letter-spacing: 0.04em;
       min-height: 44px;
+      width: 10rem;
       transition: border-color var(--transition-fast);
     }
 
@@ -1266,23 +1266,9 @@
       border-bottom-color: var(--color-text);
     }
 
-    .profile-welcome .btn-create-profile {
-      padding: 0.625rem 1.25rem;
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: var(--color-text);
-      background: transparent;
-      border: 1px solid var(--color-text);
-      border-radius: 0;
-      white-space: nowrap;
-      min-height: 44px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .profile-welcome .btn-create-profile:hover {
-      opacity: 0.7;
-      background: transparent;
+    .profile-welcome input[type="text"]::placeholder {
+      color: var(--color-text-muted);
+      letter-spacing: 0.04em;
     }
 
     .profile-list {
@@ -1491,18 +1477,18 @@
        ══════════════════════════════════════════════════ -->
   <div id="view-start" class="view active">
 
-    <!-- Top bar: profile + gear -->
+    <!-- Top bar: profile + settings -->
     <div class="start-topbar" id="start-topbar">
       <span class="topbar-profile-name" id="topbar-profile-name"></span>
-      <button class="btn-gear" id="btn-gear" aria-label="Settings">&#9881;</button>
+      <button class="btn-settings" id="btn-gear" aria-label="Settings">&#8592;</button>
     </div>
 
-    <!-- Center: title + position + begin -->
+    <!-- Center: title + position (tappable) + begin -->
     <div class="start-center">
       <h1 class="app-title jp">ここすき</h1>
-      <div class="start-position" id="start-position"></div>
+      <button class="start-position" id="start-position"></button>
       <div class="start-actions" id="start-actions">
-        <button class="btn-primary" id="btn-start-session">Begin</button>
+        <button class="btn-primary" id="btn-start-session">begin</button>
       </div>
     </div>
 
@@ -2271,42 +2257,27 @@ function renderProfileSection() {
   const activeProfile = getActiveProfile();
 
   if (!activeProfile || profiles.length === 0) {
-    // No profile — show centered welcome on main page
+    // No profile — show title + single input, nothing else
     profileSection.classList.remove('hidden');
     profileSection.innerHTML = `
       <div class="profile-welcome">
-        <h3>Welcome! Enter your name to start</h3>
-        <div class="profile-input-row">
-          <input type="text" id="input-profile-name" placeholder="Your name" maxlength="20">
-          <button class="btn-create-profile" id="btn-create-profile">Create Profile</button>
-        </div>
+        <input type="text" id="input-profile-name" placeholder="your name" maxlength="20">
       </div>
     `;
     // Hide main start UI until profile is created
     $('#start-actions').classList.add('hidden');
     $('#start-topbar').classList.add('hidden');
     $('#mode-selector').classList.add('hidden');
-    document.querySelector('.start-center .app-title').style.display = 'none';
     document.querySelector('.start-center .start-position').style.display = 'none';
 
-    const btnCreate = $('#btn-create-profile');
     const inputName = $('#input-profile-name');
-
-    btnCreate.addEventListener('click', () => {
-      const name = inputName.value.trim();
-      if (name) {
-        createProfile(name);
-
-        renderStartScreen();
-      }
-    });
+    inputName.focus();
 
     inputName.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const name = inputName.value.trim();
         if (name) {
           createProfile(name);
-  
           renderStartScreen();
         }
       }
@@ -2319,7 +2290,6 @@ function renderProfileSection() {
   $('#start-actions').classList.remove('hidden');
   $('#start-topbar').classList.remove('hidden');
   $('#mode-selector').classList.remove('hidden');
-  document.querySelector('.start-center .app-title').style.display = '';
   document.querySelector('.start-center .start-position').style.display = '';
 
   // Update topbar name
@@ -2573,7 +2543,9 @@ function updateStartPosition() {
     const currentLesson = lessons[currentLessonIdx];
     const phaseLabels = { 1: 'Foundation', 2: 'Structure', 3: 'Flow', 4: 'Independence' };
     const phaseLabel = phaseLabels[currentLesson.phase] || '';
-    positionEl.textContent = `${currentLesson.genki_ref}: ${currentLesson.title}`;
+    positionEl.textContent = currentLesson.genki_ref === currentLesson.title
+      ? currentLesson.title
+      : `${currentLesson.genki_ref}: ${currentLesson.title}`;
   }
 }
 
@@ -3958,6 +3930,15 @@ $('#btn-gear').addEventListener('click', () => {
 });
 $('#btn-close-drawer').addEventListener('click', () => {
   settingsDrawer.classList.remove('open');
+});
+
+// Position text opens drawer scrolled to course selectors
+$('#start-position').addEventListener('click', () => {
+  settingsDrawer.classList.add('open');
+  const selectors = $('#drawer-selectors');
+  if (selectors) {
+    setTimeout(() => selectors.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
 });
 
 // ══════════════════════════════════════════════════════
