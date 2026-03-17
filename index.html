@@ -466,7 +466,7 @@
     .mode-selector {
       display: flex;
       justify-content: center;
-      gap: 2rem;
+      gap: 1.25rem;
       margin-top: 1.25rem;
       margin-bottom: 0.25rem;
     }
@@ -474,8 +474,8 @@
       background: none;
       border: none;
       font-family: var(--font-en);
-      font-size: 0.8rem;
-      letter-spacing: 0.05em;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
       color: var(--color-text-muted);
       padding: 0.25rem 0;
       cursor: pointer;
@@ -502,6 +502,12 @@
       font-size: 2rem;
       line-height: 1.3;
       color: var(--color-text);
+    }
+    .kana-intro-cell .kana-twin {
+      font-family: var(--font-jp);
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.1rem;
     }
     .kana-intro-cell .kana-romaji {
       font-size: 0.7rem;
@@ -1564,6 +1570,7 @@
 
     <div class="mode-selector" id="mode-selector">
       <button id="btn-mode-learn" onclick="window.__setMode('learn')">Learn Hiragana</button>
+      <button id="btn-mode-learn-katakana" onclick="window.__setMode('learn-katakana')">Learn Katakana</button>
       <button id="btn-mode-practice" class="active" onclick="window.__setMode('practice')">Practice</button>
     </div>
 
@@ -1641,6 +1648,7 @@
 // ══════════════════════════════════════════════════════
 import n5Content from './src/data/n5-content.js';
 import hiraganaGroups, { confusablePairs } from './src/data/hiragana-groups.js';
+import katakanaGroups, { katakanaConfusablePairs } from './src/data/katakana-groups.js';
 
 // ══════════════════════════════════════════════════════
 // Exercise Generation (inline — lesson-aware Genki I curriculum)
@@ -2111,7 +2119,7 @@ let exercises = [];       // array of exercises for the current session
 let answered = false;     // whether the current exercise has been answered
 let sessionResults = [];  // array of { type, correct } for each answered exercise
 let reinforceQueue = [];  // wrong items to reinforce later in session
-let currentMode = 'practice'; // 'practice' or 'learn'
+let currentMode = 'practice'; // 'practice', 'learn', or 'learn-katakana'
 
 // TTS
 let voices = [];
@@ -2433,7 +2441,7 @@ function renderProgressionSection() {
     return;
   }
 
-  if (currentMode === 'learn') {
+  if (currentMode === 'learn' || currentMode === 'learn-katakana') {
     renderLearningProgression(section);
     return;
   }
@@ -2507,22 +2515,25 @@ function renderProgressionSection() {
 
 function renderLearningProgression(section) {
   const history = loadSkillHistory();
-  const groupIdx = history.currentGroup || 0;
-  const group = hiraganaGroups[groupIdx];
+  const isKatakana = currentMode === 'learn-katakana';
+  const groups = isKatakana ? katakanaGroups : hiraganaGroups;
+  const groupIdx = isKatakana ? (history.currentKatakanaGroup || 0) : (history.currentGroup || 0);
+  const group = groups[groupIdx];
+  const label = isKatakana ? 'Katakana' : 'Hiragana';
 
   // Count total characters learned
   let totalChars = 0;
   for (let i = 0; i <= groupIdx; i++) {
-    totalChars += hiraganaGroups[i].characters.length;
+    totalChars += groups[i].characters.length;
   }
-  const allChars = hiraganaGroups.reduce((sum, g) => sum + g.characters.length, 0);
+  const allChars = groups.reduce((sum, g) => sum + g.characters.length, 0);
   const charPct = Math.round((totalChars / allChars) * 100);
 
-  const groupPct = Math.round(((groupIdx + 1) / hiraganaGroups.length) * 100);
+  const groupPct = Math.round(((groupIdx + 1) / groups.length) * 100);
 
   section.innerHTML = `
     <div class="progression-card">
-      <h4>Hiragana Progress</h4>
+      <h4>${label} Progress</h4>
       <div class="progression-item">
         <div class="progression-label">
           <span class="prog-name">Current Group</span>
@@ -2541,7 +2552,7 @@ function renderLearningProgression(section) {
       <div class="progression-item">
         <div class="progression-label">
           <span class="prog-name">Groups</span>
-          <span class="prog-count">${groupIdx + 1} / ${hiraganaGroups.length}</span>
+          <span class="prog-count">${groupIdx + 1} / ${groups.length}</span>
         </div>
         <div class="progression-bar">
           <div class="progression-bar-fill" style="width: ${groupPct}%"></div>
@@ -2552,7 +2563,7 @@ function renderLearningProgression(section) {
 
   const indicator = $('#lesson-indicator');
   if (indicator) {
-    indicator.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
+    indicator.textContent = `${label} \u2014 Group ${group.id}: ${group.name}`;
   }
 }
 
@@ -2603,6 +2614,7 @@ window.__setMode = function(mode) {
 
 function updateModeUI() {
   const btnLearn = $('#btn-mode-learn');
+  const btnLearnKatakana = $('#btn-mode-learn-katakana');
   const btnPractice = $('#btn-mode-practice');
   const lessonContainer = $('#lesson-selector-container');
   const groupContainer = $('#group-selector-container');
@@ -2610,6 +2622,7 @@ function updateModeUI() {
   const levelBadge = $('#level-badge');
 
   btnLearn.classList.toggle('active', currentMode === 'learn');
+  btnLearnKatakana.classList.toggle('active', currentMode === 'learn-katakana');
   btnPractice.classList.toggle('active', currentMode === 'practice');
 
   if (currentMode === 'learn') {
@@ -2622,6 +2635,16 @@ function updateModeUI() {
       indicator.textContent = `Hiragana \u2014 Group ${group.id}: ${group.name}`;
     }
     if (levelBadge) levelBadge.textContent = 'ひらがな';
+  } else if (currentMode === 'learn-katakana') {
+    lessonContainer.classList.add('hidden');
+    groupContainer.classList.remove('hidden');
+    if (indicator) {
+      const history = loadSkillHistory();
+      const groupIdx = history.currentKatakanaGroup || 0;
+      const group = katakanaGroups[groupIdx];
+      indicator.textContent = `Katakana \u2014 Group ${group.id}: ${group.name}`;
+    }
+    if (levelBadge) levelBadge.textContent = 'カタカナ';
   } else {
     lessonContainer.classList.remove('hidden');
     groupContainer.classList.add('hidden');
@@ -2634,10 +2657,12 @@ function renderGroupSelector() {
   const select = document.getElementById('group-select');
   if (!select) return;
   const history = loadSkillHistory();
-  const currentGroup = history.currentGroup || 0;
+  const isKatakana = currentMode === 'learn-katakana';
+  const groups = isKatakana ? katakanaGroups : hiraganaGroups;
+  const currentGroup = isKatakana ? (history.currentKatakanaGroup || 0) : (history.currentGroup || 0);
 
   select.innerHTML = '';
-  hiraganaGroups.forEach((group, i) => {
+  groups.forEach((group, i) => {
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = `Group ${group.id}: ${group.name}`;
@@ -2647,7 +2672,11 @@ function renderGroupSelector() {
 
   select.onchange = function() {
     const history = loadSkillHistory();
-    history.currentGroup = parseInt(this.value, 10);
+    if (currentMode === 'learn-katakana') {
+      history.currentKatakanaGroup = parseInt(this.value, 10);
+    } else {
+      history.currentGroup = parseInt(this.value, 10);
+    }
     saveSkillHistory(history);
     renderStartScreen();
   };
@@ -2657,10 +2686,13 @@ function renderGroupSelector() {
 // Session Logic
 // ══════════════════════════════════════════════════════
 async function startSession() {
-  if (currentMode === 'learn') {
+  if (currentMode === 'learn' || currentMode === 'learn-katakana') {
     const history = loadSkillHistory();
-    const groupIdx = history.currentGroup || 0;
-    exercises = generateLearningSession(groupIdx);
+    const isKatakana = currentMode === 'learn-katakana';
+    const groupIdx = isKatakana ? (history.currentKatakanaGroup || 0) : (history.currentGroup || 0);
+    const groups = isKatakana ? katakanaGroups : hiraganaGroups;
+    const pairs = isKatakana ? katakanaConfusablePairs : confusablePairs;
+    exercises = generateLearningSession(groupIdx, groups, pairs);
   } else {
     exercises = generateExercises(n5Content, 13);
   }
@@ -2677,10 +2709,11 @@ async function startSession() {
 }
 
 // ── Learning Session Generation ─────────────────────
-function getWordsUpToGroup(groupIdx) {
+function getWordsUpToGroup(groupIdx, groups) {
+  groups = groups || hiraganaGroups;
   const words = [];
-  for (let i = 0; i <= groupIdx && i < hiraganaGroups.length; i++) {
-    for (const w of hiraganaGroups[i].words) {
+  for (let i = 0; i <= groupIdx && i < groups.length; i++) {
+    for (const w of groups[i].words) {
       words.push({ ...w, _groupIdx: i });
     }
   }
@@ -2701,11 +2734,14 @@ function normalizeRomaji(input) {
   return s;
 }
 
-function generateLearningSession(groupIdx) {
-  const group = hiraganaGroups[groupIdx];
-  const allWords = getWordsUpToGroup(groupIdx);
+function generateLearningSession(groupIdx, groups, confusables) {
+  groups = groups || hiraganaGroups;
+  confusables = confusables || confusablePairs;
+  const group = groups[groupIdx];
+  const allWords = getWordsUpToGroup(groupIdx, groups);
   const currentGroupWords = group.words;
   const exerciseList = [];
+  const isKatakana = groups === katakanaGroups;
 
   // 1. Intro card (always first)
   exerciseList.push({
@@ -2714,6 +2750,7 @@ function generateLearningSession(groupIdx) {
     groupId: group.id,
     characters: group.characters,
     _isIntro: true,
+    _isKatakana: isKatakana,
   });
 
   // 2. Build varied exercises from current group words
@@ -2738,7 +2775,7 @@ function generateLearningSession(groupIdx) {
   }
 
   // 3. Add confusable pair exercises if available for this group
-  const availablePairs = confusablePairs.filter(p => p.availableAfterGroup <= groupIdx + 1);
+  const availablePairs = confusables.filter(p => p.availableAfterGroup <= groupIdx + 1);
   for (const pair of availablePairs) {
     exerciseList.push(makeHiraganaConfusable(pair));
   }
@@ -2975,12 +3012,16 @@ function renderExerciseContent(ex) {
 function renderHiraganaIntro(ex) {
   let gridHtml = '';
   for (const ch of ex.characters) {
-    gridHtml += `<div class="kana-intro-cell"><div class="kana-char">${ch.kana}</div><div class="kana-romaji">${ch.romaji}</div></div>`;
+    const twinLine = (ex._isKatakana && ch.hiragana) ? `<div class="kana-twin">${ch.hiragana}</div>` : '';
+    gridHtml += `<div class="kana-intro-cell"><div class="kana-char">${ch.kana}</div>${twinLine}<div class="kana-romaji">${ch.romaji}</div></div>`;
   }
+  const subtitle = ex._isKatakana
+    ? 'Study these katakana characters and their hiragana twins.'
+    : 'Study these characters. You\u2019ll read words with them next.';
   return `
     <div class="exercise-prompt">
       <p class="instruction" style="margin-bottom:0.25rem;">Group ${ex.groupId}: ${escHtml(ex.groupName)}</p>
-      <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:0.5rem;">Study these characters. You'll read words with them next.</p>
+      <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:0.5rem;">${subtitle}</p>
       <div class="kana-intro-grid">${gridHtml}</div>
     </div>
     <div id="explanation-slot"></div>
@@ -3793,7 +3834,7 @@ function goToNextExercise() {
     const wrongEx = reinforceQueue.shift();
     let reinforcement = null;
 
-    if (currentMode === 'learn') {
+    if (currentMode === 'learn' || currentMode === 'learn-katakana') {
       reinforcement = makeLearningReinforcement(wrongEx);
     } else {
       const history = loadSkillHistory();
