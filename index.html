@@ -859,14 +859,18 @@
       font-weight: 400;
     }
 
-    /* Session Footer */
+    /* Session Footer — sticky above Safari bar */
     .session-footer {
+      position: sticky;
+      bottom: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 2rem;
-      margin-top: auto;
-      padding-top: 2rem;
+      padding: 1rem 0;
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+      background: var(--color-bg);
+      z-index: 10;
     }
 
     .session-footer .btn-primary {
@@ -2606,8 +2610,11 @@ function setupSentenceBuild(ex) {
       answerZone.classList.add('incorrect-zone');
     }
 
-    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
-    showNextButton();
+    // Brief flash, then swap to explanation
+    setTimeout(() => {
+      showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
+      showNextButton();
+    }, 600);
   });
 }
 
@@ -2889,7 +2896,7 @@ window.__selectOption = function(btn) {
   const isCorrect = userAnswer === correctAnswer;
   const ex = exercises[currentIndex];
 
-  // Highlight selected button
+  // Highlight selected button briefly
   btn.classList.add(isCorrect ? 'correct' : 'incorrect');
 
   // Disable all option buttons and reveal correct
@@ -2912,14 +2919,21 @@ window.__selectOption = function(btn) {
     listeningRomajiSlot.classList.remove('hidden');
   }
 
-  showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
-  showNextButton();
+  // Brief flash of correct/incorrect highlight, then swap to explanation
+  setTimeout(() => {
+    showExplanation(isCorrect, ex.explanation, isCorrect ? null : correctAnswer);
+    showNextButton();
+  }, 600);
 };
 
 // ── Explanation ─────────────────────────────────────
 function showExplanation(isCorrect, explanation, correctAnswer) {
-  const slot = exerciseCard.querySelector('#explanation-slot');
-  if (!slot) return;
+  // Replace options grid with explanation (Option A: no scroll needed)
+  const optionsGrid = exerciseCard.querySelector('.options-grid');
+  const wordBank = exerciseCard.querySelector('.word-bank');
+  const answerZone = exerciseCard.querySelector('.answer-zone');
+  const btnCheck = exerciseCard.querySelector('#btn-check-sentence');
+  const target = optionsGrid || wordBank;
 
   let html = `<div class="explanation-box">`;
   html += `<strong style="color:${isCorrect ? 'var(--color-correct)' : 'var(--color-incorrect)'}">`;
@@ -2933,7 +2947,17 @@ function showExplanation(isCorrect, explanation, correctAnswer) {
   }
   html += `</div>`;
 
-  slot.innerHTML = html;
+  if (target) {
+    // Replace options with explanation
+    target.outerHTML = html;
+    // Clean up sentence build UI if present
+    if (answerZone) answerZone.remove();
+    if (btnCheck) btnCheck.remove();
+  } else {
+    // Fallback: use explanation slot
+    const slot = exerciseCard.querySelector('#explanation-slot');
+    if (slot) slot.innerHTML = html;
+  }
 }
 
 function showNextButton() {
