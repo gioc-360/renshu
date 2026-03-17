@@ -2764,6 +2764,8 @@ function setupPronunciation(ex) {
   const stopIcon = exerciseCard.querySelector('#stop-icon');
   const recordLabel = exerciseCard.querySelector('#record-label');
   const expected = ex.japanese || ex.question;
+  const expectedAlt = ex.correct_answer || null;  // kana reading
+  const expectedRomaji = ex.romaji || null;        // romaji reading
   let pendingTranscript = null;
 
   if (!SpeechRecognitionAPI) {
@@ -2793,12 +2795,15 @@ function setupPronunciation(ex) {
     resultBox.classList.remove('hidden');
     exerciseCard.querySelector('#pron-detected').textContent = transcript;
 
-    const similarity = computeSimilarity(expected, transcript);
+    // Compare against all representations, take best score
+    let similarity = computeSimilarity(expected, transcript);
+    if (expectedAlt) similarity = Math.max(similarity, computeSimilarity(expectedAlt, transcript));
+    if (expectedRomaji) similarity = Math.max(similarity, computeSimilarity(expectedRomaji, transcript));
     const matchEl = exerciseCard.querySelector('#pron-match');
     const detectedEl = exerciseCard.querySelector('#pron-detected');
     const hearBtn = exerciseCard.querySelector('#btn-hear-correct');
 
-    if (similarity >= 0.8) {
+    if (similarity >= 0.6) {
       matchEl.textContent = 'Excellent!';
       matchEl.className = 'match-good';
       detectedEl.className = 'detected-text match-good';
@@ -2808,7 +2813,7 @@ function setupPronunciation(ex) {
       recordExerciseResult(ex.type, true, ex._vocabIndex, ex._grammarIndex);
       if (hearBtn) hearBtn.classList.add('hidden');
       showNextButton(true);
-    } else if (similarity >= 0.5) {
+    } else if (similarity >= 0.3) {
       matchEl.textContent = 'Close — try again or skip';
       matchEl.className = 'match-partial';
       detectedEl.className = 'detected-text match-partial';
