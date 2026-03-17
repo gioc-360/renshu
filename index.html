@@ -1535,7 +1535,7 @@ function getSentencesUpToLesson(lessons, lessonIdx) {
   const sentences = [];
   for (let i = 0; i <= lessonIdx && i < lessons.length; i++) {
     for (const s of lessons[i].sentences) {
-      sentences.push(s);
+      sentences.push({ ...s, _lessonIdx: i });
     }
   }
   return sentences;
@@ -1557,7 +1557,7 @@ function getSentenceBuildsUpToLesson(lessons, lessonIdx) {
   const builds = [];
   for (let i = 0; i <= lessonIdx && i < lessons.length; i++) {
     for (const b of (lessons[i].sentenceBuilds || [])) {
-      builds.push(b);
+      builds.push({ ...b, _lessonIdx: i });
     }
   }
   return builds;
@@ -1596,14 +1596,17 @@ function romajiHtml(romaji, phase) {
 
 // ── Exercise maker functions ──────────────────────────
 
-function makeVocabQuiz(allVocab, vocabKey) {
+function makeVocabQuiz(allVocab, vocabKey, currentLessonVocab) {
   const item = vocabKey ? allVocab.find(v => v._globalKey === vocabKey) || pickOne(allVocab) : pickOne(allVocab);
   const displayWord = item.kanji || item.kana;
   const reverse = Math.random() < 0.5;
 
+  // Prefer distractors from the same lesson; fall back to full pool if not enough
+  const lessonPool = (currentLessonVocab || allVocab).filter(v => v.english !== item.english);
+  const distractorPool = lessonPool.length >= 3 ? lessonPool : allVocab.filter(v => v.english !== item.english);
+
   if (reverse) {
-    const distractorItems = pickN(allVocab.filter(v => v.english !== item.english), 3);
-    const distractors = distractorItems.map(v => v.kanji || v.kana);
+    const distractorItems = pickN(distractorPool, 3);
     const correctOption = displayWord;
     const allOptions = shuffle([
       { text: correctOption, romaji: item.romaji },
@@ -1621,7 +1624,7 @@ function makeVocabQuiz(allVocab, vocabKey) {
     };
   }
 
-  const distractors = pickN(allVocab.filter(v => v.english !== item.english), 3).map(v => v.english);
+  const distractors = pickN(distractorPool, 3).map(v => v.english);
   return {
     type: 'vocab_quiz',
     japanese: displayWord,
@@ -1634,8 +1637,9 @@ function makeVocabQuiz(allVocab, vocabKey) {
   };
 }
 
-function makeGrammarFill(allGrammarFills, grammarKey) {
-  const item = grammarKey ? allGrammarFills.find(g => g._globalKey === grammarKey) || pickOne(allGrammarFills) : pickOne(allGrammarFills);
+function makeGrammarFill(allGrammarFills, grammarKey, currentLessonGrammar) {
+  const sourcePool = grammarKey ? allGrammarFills : (currentLessonGrammar && currentLessonGrammar.length > 0 ? currentLessonGrammar : allGrammarFills);
+  const item = grammarKey ? allGrammarFills.find(g => g._globalKey === grammarKey) || pickOne(sourcePool) : pickOne(sourcePool);
   return {
     type: 'grammar_fill',
     question: item.sentence,
@@ -1647,9 +1651,10 @@ function makeGrammarFill(allGrammarFills, grammarKey) {
   };
 }
 
-function makeSentenceBuild(allSentenceBuilds) {
-  if (allSentenceBuilds.length === 0) return null;
-  const item = pickOne(allSentenceBuilds);
+function makeSentenceBuild(allSentenceBuilds, currentLessonBuilds) {
+  const sourcePool = (currentLessonBuilds && currentLessonBuilds.length > 0) ? currentLessonBuilds : allSentenceBuilds;
+  if (sourcePool.length === 0) return null;
+  const item = pickOne(sourcePool);
   let scrambled = shuffle([...item.words]);
   let attempts = 0;
   while (scrambled.join('') === item.correct_answer && attempts < 10) {
@@ -1667,10 +1672,14 @@ function makeSentenceBuild(allSentenceBuilds) {
   };
 }
 
-function makeReading(allSentences) {
+function makeReading(allSentences, currentLessonSentences) {
   if (allSentences.length < 3) return null;
-  const item = pickOne(allSentences);
-  const distractors = pickN(allSentences.filter(s => s.english !== item.english), 2).map(s => s.english);
+  const sourcePool = (currentLessonSentences && currentLessonSentences.length > 0) ? currentLessonSentences : allSentences;
+  const item = pickOne(sourcePool);
+  // Prefer distractors from the same lesson; fall back to full pool
+  const lessonPool = (currentLessonSentences || allSentences).filter(s => s.english !== item.english);
+  const distractorPool = lessonPool.length >= 2 ? lessonPool : allSentences.filter(s => s.english !== item.english);
+  const distractors = pickN(distractorPool, 2).map(s => s.english);
   return {
     type: 'reading',
     japanese: item.japanese,
@@ -1683,10 +1692,12 @@ function makeReading(allSentences) {
   };
 }
 
-function makeListening(allVocab, vocabKey) {
+function makeListening(allVocab, vocabKey, currentLessonVocab) {
   const item = vocabKey ? allVocab.find(v => v._globalKey === vocabKey) || pickOne(allVocab) : pickOne(allVocab);
   const displayWord = item.kanji || item.kana;
-  const distractors = pickN(allVocab.filter(v => v.english !== item.english), 3).map(v => v.english);
+  const lessonPool = (currentLessonVocab || allVocab).filter(v => v.english !== item.english);
+  const distractorPool = lessonPool.length >= 3 ? lessonPool : allVocab.filter(v => v.english !== item.english);
+  const distractors = pickN(distractorPool, 3).map(v => v.english);
   return {
     type: 'listening',
     japanese: displayWord,
@@ -1762,9 +1773,11 @@ function generateExercises(content, count = 13) {
   const allGrammarFills = isPhase0 ? [] : getGrammarFillsUpToLesson(lessons, currentLessonIdx);
   const allSentenceBuilds = isPhase0 ? [] : getSentenceBuildsUpToLesson(lessons, currentLessonIdx);
 
-  // Current lesson vocab & grammar (new material)
+  // Current lesson pools (new material + distractors stay within lesson)
   const currentVocab = allVocab.filter(v => v._lessonIdx === currentLessonIdx);
   const currentGrammarFills = isPhase0 ? [] : allGrammarFills.filter(g => g._lessonIdx === currentLessonIdx);
+  const currentSentences = allSentences.filter(s => s._lessonIdx === currentLessonIdx);
+  const currentSentenceBuilds = isPhase0 ? [] : allSentenceBuilds.filter(b => b._lessonIdx === currentLessonIdx);
 
   const exercises = [];
 
@@ -1789,21 +1802,21 @@ function generateExercises(content, count = 13) {
 
   // Create exercises for NEW vocab items
   for (const key of newVocabKeys) {
-    exercises.push(makeVocabQuiz(allVocab, key));
+    exercises.push(makeVocabQuiz(allVocab, key, currentVocab));
   }
 
   // Create exercises for NEW grammar fills (skipped for Phase 0)
   for (const key of newGrammarKeys) {
-    exercises.push(makeGrammarFill(allGrammarFills, key));
+    exercises.push(makeGrammarFill(allGrammarFills, key, currentGrammarFills));
   }
 
   // One sentence_build and one reading always (if available) — skip sentence_build for Phase 0
   if (!isPhase0 && allSentenceBuilds.length > 0) {
-    const sb = makeSentenceBuild(allSentenceBuilds);
+    const sb = makeSentenceBuild(allSentenceBuilds, currentSentenceBuilds);
     if (sb) exercises.push(sb);
   }
   if (allSentences.length >= 3) {
-    const rd = makeReading(allSentences);
+    const rd = makeReading(allSentences, currentSentences);
     if (rd) exercises.push(rd);
   }
 
@@ -1823,28 +1836,28 @@ function generateExercises(content, count = 13) {
       // Phase 0: only vocab_quiz, listening, pronunciation, reading — no grammar or sentence_build
       if (rand < 0.40 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
-        exercises.push(makeVocabQuiz(allVocab, reviewKey));
+        exercises.push(makeVocabQuiz(allVocab, reviewKey, currentVocab));
       } else if (rand < 0.60 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
-        exercises.push(makeListening(allVocab, reviewKey));
+        exercises.push(makeListening(allVocab, reviewKey, currentVocab));
       } else if (rand < 0.80 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
         exercises.push(makePronunciation(allVocab, allSentences, reviewKey));
       } else if (allSentences.length >= 3) {
-        const rd = makeReading(allSentences);
+        const rd = makeReading(allSentences, currentSentences);
         if (rd) exercises.push(rd);
-        else exercises.push(makeVocabQuiz(allVocab));
+        else exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
       } else {
-        exercises.push(makeVocabQuiz(allVocab));
+        exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
       }
     } else {
       // Normal phases (1-4): full exercise mix
       if (rand < 0.35 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
-        exercises.push(makeVocabQuiz(allVocab, reviewKey));
+        exercises.push(makeVocabQuiz(allVocab, reviewKey, currentVocab));
       } else if (rand < 0.50 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
-        exercises.push(makeListening(allVocab, reviewKey));
+        exercises.push(makeListening(allVocab, reviewKey, currentVocab));
       } else if (rand < 0.65 && sortedReviewVocab.length > 0) {
         const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
         exercises.push(makePronunciation(allVocab, allSentences, reviewKey));
@@ -1852,26 +1865,26 @@ function generateExercises(content, count = 13) {
         const reviewGrammarPool = history.seenGrammar.filter(k => !newGrammarKeys.includes(k));
         if (reviewGrammarPool.length > 0) {
           const reviewKey = reviewGrammarPool[Math.floor(Math.random() * reviewGrammarPool.length)];
-          exercises.push(makeGrammarFill(allGrammarFills, reviewKey));
+          exercises.push(makeGrammarFill(allGrammarFills, reviewKey, currentGrammarFills));
         } else if (allGrammarFills.length > 0) {
-          exercises.push(makeGrammarFill(allGrammarFills));
+          exercises.push(makeGrammarFill(allGrammarFills, null, currentGrammarFills));
         } else if (allSentenceBuilds.length > 0) {
-          const sb = makeSentenceBuild(allSentenceBuilds);
+          const sb = makeSentenceBuild(allSentenceBuilds, currentSentenceBuilds);
           if (sb) exercises.push(sb);
-          else exercises.push(makeVocabQuiz(allVocab));
+          else exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
         } else {
-          exercises.push(makeVocabQuiz(allVocab));
+          exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
         }
       } else if (rand < 0.85 && allSentenceBuilds.length > 0) {
-        const sb = makeSentenceBuild(allSentenceBuilds);
+        const sb = makeSentenceBuild(allSentenceBuilds, currentSentenceBuilds);
         if (sb) exercises.push(sb);
-        else exercises.push(makeVocabQuiz(allVocab));
+        else exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
       } else if (allSentences.length >= 3) {
-        const rd = makeReading(allSentences);
+        const rd = makeReading(allSentences, currentSentences);
         if (rd) exercises.push(rd);
-        else exercises.push(makeVocabQuiz(allVocab));
+        else exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
       } else {
-        exercises.push(makeVocabQuiz(allVocab));
+        exercises.push(makeVocabQuiz(allVocab, null, currentVocab));
       }
     }
   }
@@ -2338,16 +2351,13 @@ function renderLessonSelector() {
     select.appendChild(opt);
   });
 
-  // Remove old listener by cloning
-  const newSelect = select.cloneNode(true);
-  select.parentNode.replaceChild(newSelect, select);
-
-  newSelect.addEventListener('change', () => {
+  // Use a single persistent listener via onchange (avoids stale closures from cloneNode)
+  select.onchange = function() {
     const history = loadSkillHistory();
-    history.currentLesson = parseInt(newSelect.value, 10);
+    history.currentLesson = parseInt(this.value, 10);
     saveSkillHistory(history);
     renderStartScreen();
-  });
+  };
 }
 
 function renderStartScreen() {
@@ -2661,12 +2671,14 @@ function renderPronunciation(ex) {
     </div>
     <div class="audio-controls">
       <button class="btn-record" id="btn-record-audio" title="Record">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <span id="record-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
           <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
           <line x1="12" y1="19" x2="12" y2="23"></line>
           <line x1="8" y1="23" x2="16" y2="23"></line>
-        </svg>
+        </svg></span>
+        <span id="stop-icon" class="hidden"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg></span>
+        <span id="record-label" style="margin-left:0.5rem;font-size:0.9rem;">Record</span>
       </button>
       <div class="recording-indicator hidden" id="recording-indicator">
         <span class="recording-dot"></span>
@@ -2690,7 +2702,11 @@ function setupPronunciation(ex) {
   const btnRecord = exerciseCard.querySelector('#btn-record-audio');
   const indicator = exerciseCard.querySelector('#recording-indicator');
   const resultBox = exerciseCard.querySelector('#pronunciation-result');
+  const recordIcon = exerciseCard.querySelector('#record-icon');
+  const stopIcon = exerciseCard.querySelector('#stop-icon');
+  const recordLabel = exerciseCard.querySelector('#record-label');
   const expected = ex.japanese || ex.question;
+  let pendingTranscript = null;
 
   if (!SpeechRecognitionAPI) {
     btnRecord.disabled = true;
@@ -2699,79 +2715,101 @@ function setupPronunciation(ex) {
     return;
   }
 
+  function setButtonState(state) {
+    if (state === 'record') {
+      recordIcon.classList.remove('hidden');
+      stopIcon.classList.add('hidden');
+      recordLabel.textContent = 'Record';
+      btnRecord.classList.remove('recording');
+      indicator.classList.add('hidden');
+    } else if (state === 'stop') {
+      recordIcon.classList.add('hidden');
+      stopIcon.classList.remove('hidden');
+      recordLabel.textContent = 'Stop';
+      btnRecord.classList.add('recording');
+      indicator.classList.remove('hidden');
+    }
+  }
+
+  function processResult(transcript) {
+    resultBox.classList.remove('hidden');
+    exerciseCard.querySelector('#pron-detected').textContent = transcript;
+
+    const similarity = computeSimilarity(expected, transcript);
+    const matchEl = exerciseCard.querySelector('#pron-match');
+    const detectedEl = exerciseCard.querySelector('#pron-detected');
+
+    let isCorrect;
+    if (similarity >= 0.8) {
+      matchEl.textContent = 'Excellent!';
+      matchEl.className = 'match-good';
+      detectedEl.className = 'detected-text match-good';
+      isCorrect = true;
+    } else if (similarity >= 0.5) {
+      matchEl.textContent = 'Close! Try again or continue.';
+      matchEl.className = 'match-partial';
+      detectedEl.className = 'detected-text match-partial';
+      isCorrect = true;
+    } else {
+      matchEl.textContent = 'Try again';
+      matchEl.className = 'match-poor';
+      detectedEl.className = 'detected-text match-poor';
+      isCorrect = false;
+    }
+
+    answered = true;
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
+    showNextButton();
+  }
+
   btnRecord.addEventListener('click', () => {
     if (answered) return;
 
+    // State: recording → stop recording, then process
     if (isRecording && recognition) {
       recognition.stop();
       return;
     }
 
+    // State: idle → start recording
+    pendingTranscript = null;
     recognition = new SpeechRecognitionAPI();
     recognition.lang = 'ja-JP';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = true;
 
     recognition.onstart = () => {
       isRecording = true;
-      btnRecord.classList.add('recording');
-      indicator.classList.remove('hidden');
+      setButtonState('stop');
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      const confidence = event.results[0][0].confidence;
-
-      resultBox.classList.remove('hidden');
-      exerciseCard.querySelector('#pron-detected').textContent = transcript;
-
-      // Simple similarity check
-      const similarity = computeSimilarity(expected, transcript);
-      const matchEl = exerciseCard.querySelector('#pron-match');
-      const detectedEl = exerciseCard.querySelector('#pron-detected');
-
-      let isCorrect;
-      if (similarity >= 0.8) {
-        matchEl.textContent = 'Excellent!';
-        matchEl.className = 'match-good';
-        detectedEl.className = 'detected-text match-good';
-        isCorrect = true;
-      } else if (similarity >= 0.5) {
-        matchEl.textContent = 'Close! Try again or continue.';
-        matchEl.className = 'match-partial';
-        detectedEl.className = 'detected-text match-partial';
-        isCorrect = true; // partial credit
-      } else {
-        matchEl.textContent = 'Try again';
-        matchEl.className = 'match-poor';
-        detectedEl.className = 'detected-text match-poor';
-        isCorrect = false;
-      }
-
-      answered = true;
-      sessionResults.push({ type: ex.type, correct: isCorrect });
-      recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
-      showNextButton();
+      // Collect transcript but don't process yet — wait for user to click Stop
+      const last = event.results[event.results.length - 1];
+      pendingTranscript = last[0].transcript;
     };
 
     recognition.onerror = (event) => {
       isRecording = false;
-      btnRecord.classList.remove('recording');
-      indicator.classList.add('hidden');
-
+      setButtonState('record');
       resultBox.classList.remove('hidden');
       const detectedEl = exerciseCard.querySelector('#pron-detected');
       if (event.error === 'not-allowed') {
         detectedEl.textContent = 'Microphone access denied. Please allow mic permissions.';
-      } else {
-        detectedEl.textContent = `Error: ${event.error}. Tap record to try again.`;
+      } else if (event.error !== 'aborted') {
+        detectedEl.textContent = `Error: ${event.error}. Tap Record to try again.`;
       }
     };
 
     recognition.onend = () => {
       isRecording = false;
-      btnRecord.classList.remove('recording');
-      indicator.classList.add('hidden');
+      setButtonState('record');
+      // Process after stop
+      if (pendingTranscript && !answered) {
+        processResult(pendingTranscript);
+      }
     };
 
     recognition.start();
@@ -2888,8 +2926,20 @@ window.__selectOption = function(btn) {
 };
 
 // ── Gemini API for mistake explanations ─────────────
-const GEMINI_API_KEY = 'AIzaSyCfApdhcWr6BfSyd7FwNTGB2yhI6m3fSac';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+function getGeminiApiKey() {
+  let key = localStorage.getItem('renshu_gemini_key');
+  if (!key) {
+    key = prompt('Enter your Gemini API key (starts with AIzaSy...):\n\nGet one free at https://aistudio.google.com/apikey');
+    if (key && key.trim()) {
+      localStorage.setItem('renshu_gemini_key', key.trim());
+    }
+  }
+  return key ? key.trim() : null;
+}
+function getGeminiUrl() {
+  const key = getGeminiApiKey();
+  return key ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}` : null;
+}
 
 async function getGeminiExplanation(exercise, userAnswer, correctAnswer) {
   const ex = exercise;
@@ -2911,7 +2961,9 @@ Correct answer: ${correctAnswer}
 ${ex.explanation ? 'Context: ' + ex.explanation : ''}`;
 
   try {
-    const res = await fetch(GEMINI_URL, {
+    const url = getGeminiUrl();
+    if (!url) return null;
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
