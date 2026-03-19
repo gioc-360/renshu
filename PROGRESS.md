@@ -58,13 +58,17 @@ The test: at no point should a user carry an error they don't know about.
 ## What's Open
 
 ### Bugs
-- None known after the `const total` duplicate fix + SW self-healing
+- None known
 
 ### Deferred
 - **Pronunciation log**: hiragana exercises now track to FSRS (fixed), but the session complete breakdown doesn't show hiragana exercise types in the log list — verify this is actually working
 - **Design framework audit**: identified as priority but not executed — visual audit using Tufte's Visual Display methodology
-- **TC3 not confirmed**: "Does the core feel right?" taste checkpoint still open
-- **Katakana FSRS**: `ensureHiraFSRSCard` only handles `hira_` prefix — katakana characters need `kata_` prefix cards too (the lesson pulse already handles this, but the exercise answer handler only creates `hira_` keys)
+
+### Fixed
+- **TC3 confirmed**: core feels right
+- **Action mode drill answer checking**: `vocab_recall` exercises from scenario drill used `correct_answer` but `checkAnswer` expected `correct_kana`/`correct_romaji` — answers always failed. Fixed to use correct field names.
+- **Katakana FSRS**: exercises now tagged `_isKatakana`, answer handler uses `kata_` prefix for katakana characters instead of `hira_`
+- **Correct answer reveal**: no longer shows empty "()" when romaji is null (scenario drill items)
 
 ### Ideas Not Yet Scoped
 - Offline-first with full SW caching of all lesson data
@@ -96,8 +100,14 @@ The test: at no point should a user carry an error they don't know about.
 - "enter scene" button launches scene immediately (no gates)
 - Lesson pulse shows scenario prereqs at retrievability opacity
 
+**Increment 4: Feedback loop (built)**
+- "drill missed phrases" button on scene results — filters drill to only missed prereqs
+- "enter scene" button on drill complete (action mode) — re-enter scene after drilling
+- `generateScenarioDrill` accepts optional `filterPrereqIds` to drill specific items
+- `drillFromScene` flag tracks drill provenance
+- Scene results show explicit count: "3/5. Some rough spots."
+
 **What's next:**
-- Increment 4: feedback loop wiring (verify scene results → FSRS → drill → re-enter cycle)
 - Increment 5: AI enhancement (Claude Haiku evaluation, API proxy, adaptive responses, register detection)
 
 ## Architecture Decisions

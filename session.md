@@ -41,6 +41,7 @@ Surface: Kenya Hara design system, envisioning-information
 - TC1 (v2): Confirmed — pain is the gap between isolated recall and situated production. "Fail loud" philosophy.
 - TC2 (v2): Confirmed — one scenario, offline-first, AI as enhancement, text production, casual register, card UI not chat
 - Increments 1-3 (v2): delivered — scenario content, UI restructure, scene engine (offline)
+- Increment 4 (v2): delivered — feedback loop: drill missed from scene results, enter scene from drill complete
 
 ## Increment Plan (v2 — Action Mode)
 1. **Friend scenario content** — casual register phrases, accept-lists per exchange, FSRS items
@@ -58,6 +59,6 @@ Surface: Kenya Hara design system, envisioning-information
 ---
 1. (v2) Confirmed — gap between isolated recall and situated production. Friend scenario, not konbini.
 2. (v2) Confirmed — one scenario (friend on campus), offline-first, AI as enhancement, text production, casual register, card UI not chat
-3. (v2) pending
+3. (v2) Confirmed — core feels right. Feedback loop tightened. Bugs fixed.
 4. (v2) pending
 5. (v2) pending

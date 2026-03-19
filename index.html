@@ -1933,6 +1933,7 @@
 
     <div class="complete-actions">
       <button class="btn-primary" id="btn-practice-again">Practice Again</button>
+      <button class="btn-primary hidden" id="btn-enter-scene-after-drill">enter scene</button>
       <button class="btn-secondary" id="btn-back-home">Back to Home</button>
     </div>
   </div>
@@ -1975,6 +1976,7 @@
     <div class="scene-results-list" id="scene-results-list"></div>
     <div class="complete-actions">
       <button class="btn-primary" id="btn-scene-retry">try again</button>
+      <button class="btn-primary hidden" id="btn-scene-drill-missed">drill missed phrases</button>
       <button class="btn-secondary" id="btn-scene-home">back to home</button>
     </div>
   </div>
@@ -2727,6 +2729,8 @@ let answered = false;     // whether the current exercise has been answered
 let sessionResults = [];  // array of { type, correct } for each answered exercise
 let reinforceQueue = [];  // wrong items to reinforce later in session
 let currentMode = 'action'; // 'action', 'learn', or 'learn-katakana'
+let drillFromScene = false; // true when drill was launched from scene results
+let kanaContinueSession = false; // true after first kana session — skips intro, FSRS-prioritized
 
 // TTS
 let voices = [];
@@ -3440,6 +3444,7 @@ window.__setMode = function(mode) {
   currentMode = mode;
   updateModeUI();
   renderProgressionSection();
+  renderScenarioCard();
   renderLessonPulse();
 };
 
@@ -3517,6 +3522,7 @@ async function startSession() {
   answered = false;
   reinforceQueue = [];
   correctStreak = 0;
+  drillFromScene = false;
   progressFill.classList.remove('final-stretch');
 
   const log = document.getElementById('session-review-log');
@@ -3560,10 +3566,15 @@ function normalizeRomaji(input) {
  * Generate a drill session from a scenario's prerequisite phrases.
  * FSRS-driven: due items first, then weakest, then new.
  */
-function generateScenarioDrill(scenario) {
+function generateScenarioDrill(scenario, filterPrereqIds) {
   const fsrsState = loadFSRSState();
   const exercises = [];
-  const prereqs = [...scenario.prereqs];
+  let prereqs = [...scenario.prereqs];
+
+  // If filtering to specific prereqs (e.g. missed from scene), apply filter
+  if (filterPrereqIds) {
+    prereqs = prereqs.filter(p => filterPrereqIds.includes(p.id));
+  }
 
   // Ensure FSRS cards exist for all prereqs
   for (const p of prereqs) {
@@ -3604,7 +3615,9 @@ function generateScenarioDrill(scenario) {
     exercises.push({
       type: 'vocab_recall',
       english: p.english,
-      correct_answer: p.japanese,
+      correct_kana: p.japanese,
+      correct_romaji: null,
+      correct_display: p.japanese,
       explanation: `${p.english} → ${p.japanese}`,
       _sceneKey: `scene_${scenario.id}_${p.id}`,
     });
@@ -3613,55 +3626,93 @@ function generateScenarioDrill(scenario) {
   return shuffle(exercises);
 }
 
+function getWordWeakness(word, fsrsState, prefix) {
+  // Weakness = lowest retrievability among the word's characters
+  let minR = 1;
+  for (const ch of word.kana) {
+    const card = fsrsState[`${prefix}${ch}`];
+    if (!card || card.state === NEW) return 0; // never practiced = maximally weak
+    const r = retrievability(card);
+    if (r < minR) minR = r;
+  }
+  return minR;
+}
+
+function isGroupLearned(group, fsrsState, prefix) {
+  // Group is learned when all its characters are above 0.7 retrievability
+  for (const ch of group.characters) {
+    const card = fsrsState[`${prefix}${ch.kana}`];
+    if (!card || card.state === NEW) return false;
+    if (retrievability(card) < 0.7) return false;
+  }
+  return true;
+}
+
 function generateLearningSession(groupIdx, groups, confusables) {
   groups = groups || hiraganaGroups;
   confusables = confusables || confusablePairs;
   const group = groups[groupIdx];
   const allWords = getWordsUpToGroup(groupIdx, groups);
-  const currentGroupWords = group.words;
+  const currentGroupWords = [...group.words];
   const exerciseList = [];
   const isKatakana = groups === katakanaGroups;
+  const prefix = isKatakana ? 'kata_' : 'hira_';
+  const fsrsState = loadFSRSState();
 
-  // 1. Intro card (always first)
-  exerciseList.push({
-    type: 'hiragana_intro',
-    groupName: group.name,
-    groupId: group.id,
-    characters: group.characters,
-    _isIntro: true,
-    _isKatakana: isKatakana,
-  });
+  // Sort words by weakness — weakest characters first
+  currentGroupWords.sort((a, b) => getWordWeakness(a, fsrsState, prefix) - getWordWeakness(b, fsrsState, prefix));
 
-  // 2. Build varied exercises from current group words
+  // Intro card only on first session (not on Continue)
+  if (!kanaContinueSession) {
+    exerciseList.push({
+      type: 'hiragana_intro',
+      groupName: group.name,
+      groupId: group.id,
+      characters: group.characters,
+      _isIntro: true,
+      _isKatakana: isKatakana,
+    });
+  }
+
+  // Build varied exercises — weak words get more types
   const exerciseTypes = ['read', 'spot', 'reverse', 'listen', 'build', 'produce'];
 
-  for (const word of currentGroupWords) {
-    // Each word gets 2-3 exercise types (randomly chosen)
-    const types = shuffle(exerciseTypes).slice(0, 2 + (Math.random() < 0.3 ? 1 : 0));
+  for (let i = 0; i < currentGroupWords.length; i++) {
+    const word = currentGroupWords[i];
+    // Weak words (first half) get 3 types, strong words get 1-2
+    const count = i < currentGroupWords.length / 2 ? 3 : (1 + (Math.random() < 0.4 ? 1 : 0));
+    const types = shuffle(exerciseTypes).slice(0, count);
     for (const t of types) {
+      let ex;
       if (t === 'read') {
-        exerciseList.push(makeHiraganaRead(word));
+        ex = makeHiraganaRead(word);
       } else if (t === 'spot' && currentGroupWords.length >= 4) {
-        exerciseList.push(makeHiraganaSpot(word, allWords, currentGroupWords));
+        ex = makeHiraganaSpot(word, allWords, currentGroupWords);
       } else if (t === 'reverse' && currentGroupWords.length >= 4) {
-        exerciseList.push(makeHiraganaReverse(word, currentGroupWords));
+        ex = makeHiraganaReverse(word, currentGroupWords);
       } else if (t === 'listen') {
-        exerciseList.push(makeHiraganaListen(word));
+        ex = makeHiraganaListen(word);
       } else if (t === 'build' && word.breakdown.length >= 2) {
-        exerciseList.push(makeHiraganaBuild(word));
+        ex = makeHiraganaBuild(word);
       } else if (t === 'produce') {
-        exerciseList.push(makeHiraganaProduce(word));
+        ex = makeHiraganaProduce(word);
+      }
+      if (ex) {
+        if (isKatakana) ex._isKatakana = true;
+        exerciseList.push(ex);
       }
     }
   }
 
-  // 3. Add confusable pair exercises if available for this group
+  // Confusable pair exercises if available
   const availablePairs = confusables.filter(p => p.availableAfterGroup <= groupIdx + 1);
   for (const pair of availablePairs) {
-    exerciseList.push(makeHiraganaConfusable(pair));
+    const ex = makeHiraganaConfusable(pair);
+    if (isKatakana) ex._isKatakana = true;
+    exerciseList.push(ex);
   }
 
-  // 4. Add real N5 vocab readable with known characters
+  // Real N5 vocab readable with known characters
   if (!isKatakana) {
     const readableVocab = getReadableN5Vocab(groupIdx, groups);
     if (readableVocab.length >= 4) {
@@ -3672,10 +3723,14 @@ function generateLearningSession(groupIdx, groups, confusables) {
     }
   }
 
-  // Smart interleave (but keep intro first), cap at reasonable length
-  const intro = exerciseList.shift();
-  const capped = shuffle(exerciseList).slice(0, 18);
-  return [intro, ...smartInterleave(capped)];
+  // Cap at 8 — fast cycles, not marathons
+  const hasIntro = exerciseList.length > 0 && exerciseList[0]._isIntro;
+  if (hasIntro) {
+    const intro = exerciseList.shift();
+    const capped = shuffle(exerciseList).slice(0, 8);
+    return [intro, ...smartInterleave(capped)];
+  }
+  return smartInterleave(shuffle(exerciseList).slice(0, 8));
 }
 
 function makeHiraganaRead(word) {
@@ -4912,10 +4967,11 @@ function setupProductionExercise(ex) {
     if (fsrsKey) {
       updateFSRSCard(fsrsKey, rating);
     }
-    // Track individual hiragana characters in FSRS
+    // Track individual kana characters in FSRS
     if (ex._hiraChars && ex._hiraChars.length) {
+      const prefix = ex._isKatakana ? 'kata_' : 'hira_';
       for (const ch of ex._hiraChars) {
-        const hKey = `hira_${ch}`;
+        const hKey = `${prefix}${ch}`;
         ensureHiraFSRSCard(hKey);
         updateFSRSCard(hKey, rating);
       }
@@ -4932,10 +4988,13 @@ function setupProductionExercise(ex) {
     let revealHtml = '';
     if (!isCorrect) {
       if (ex.type === 'vocab_recall') {
+        const detailLine = ex.correct_romaji
+          ? `<p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.correct_kana)} (${escHtml(ex.correct_romaji)})</p>`
+          : '';
         revealHtml = `<div class="correct-answer-reveal">
           <p class="answer-label">correct answer</p>
-          <p class="answer-text">${escHtml(ex.correct_display)}</p>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.correct_kana)} (${escHtml(ex.correct_romaji)})</p>
+          <p class="answer-text">${escHtml(ex.correct_display || ex.correct_kana)}</p>
+          ${detailLine}
         </div>`;
       } else if (ex.type === 'particle_recall') {
         revealHtml = `<div class="correct-answer-reveal">
@@ -5146,6 +5205,30 @@ function finishSession() {
 
   updateStatsAfterSession();
 
+  // Kana mode: auto-advance when group is learned, set Continue button
+  if (currentMode === 'learn' || currentMode === 'learn-katakana') {
+    const isKatakana = currentMode === 'learn-katakana';
+    const groups = isKatakana ? katakanaGroups : hiraganaGroups;
+    const prefix = isKatakana ? 'kata_' : 'hira_';
+    const history = loadSkillHistory();
+    const key = isKatakana ? 'currentKatakanaGroup' : 'currentGroup';
+    const current = history[key] || 0;
+    const fsrsState = loadFSRSState();
+
+    if (isGroupLearned(groups[current], fsrsState, prefix) && current < groups.length - 1) {
+      history[key] = current + 1;
+      saveSkillHistory(history);
+      kanaContinueSession = false; // next session gets intro for new group
+      btnPracticeAgain.textContent = `Next: ${groups[current + 1].name}`;
+    } else {
+      kanaContinueSession = true;
+      btnPracticeAgain.textContent = 'Continue';
+    }
+  } else {
+    kanaContinueSession = false;
+    btnPracticeAgain.textContent = 'Practice Again';
+  }
+
   // Compute score
   const total = sessionResults.length;
   const correct = sessionResults.filter(r => r.correct).length;
@@ -5249,6 +5332,14 @@ function finishSession() {
   // Update progress bar to 100%
   progressFill.style.width = '100%';
 
+  // Show "enter scene" button when drill came from scene (or any action mode drill)
+  const enterSceneBtn = document.getElementById('btn-enter-scene-after-drill');
+  if (currentMode === 'action') {
+    enterSceneBtn.classList.remove('hidden');
+  } else {
+    enterSceneBtn.classList.add('hidden');
+  }
+
   showView('view-complete');
 }
 
@@ -5289,6 +5380,7 @@ btnPracticeAgain.addEventListener('click', () => {
 });
 
 btnBackHome.addEventListener('click', () => {
+  kanaContinueSession = false;
   renderStartScreen();
   showView('view-start');
 });
@@ -5511,6 +5603,7 @@ function endScene() {
   clearSceneTimers();
   const { scenario, results } = sceneState;
   const correct = results.filter(r => r.isMatch).length;
+  const missed = results.filter(r => !r.isMatch).length;
   const total = results.length;
 
   // Message
@@ -5518,9 +5611,18 @@ function endScene() {
   if (correct === total) {
     msgEl.textContent = 'You handled it naturally.';
   } else if (correct >= total / 2) {
-    msgEl.textContent = 'You got through it. Some rough spots.';
+    msgEl.textContent = `${correct}/${total}. Some rough spots.`;
   } else {
-    msgEl.textContent = "That was hard. Now you know what to drill.";
+    msgEl.textContent = `${correct}/${total}. Now you know what to drill.`;
+  }
+
+  // Show/hide "drill missed" button
+  const drillMissedBtn = document.getElementById('btn-scene-drill-missed');
+  if (missed > 0) {
+    drillMissedBtn.textContent = missed === 1 ? 'drill missed phrase' : `drill ${missed} missed phrases`;
+    drillMissedBtn.classList.remove('hidden');
+  } else {
+    drillMissedBtn.classList.add('hidden');
   }
 
   // Build results list
@@ -5573,6 +5675,40 @@ document.getElementById('btn-scene-retry').addEventListener('click', () => {
 document.getElementById('btn-scene-home').addEventListener('click', () => {
   renderStartScreen();
   showView('view-start');
+});
+
+document.getElementById('btn-scene-drill-missed').addEventListener('click', () => {
+  // Collect prereq IDs for missed exchanges
+  const { scenario, results } = sceneState;
+  const missedPrereqIds = [];
+  for (const r of results) {
+    if (!r.isMatch) {
+      const ex = scenario.exchanges[r.exchangeIdx];
+      const matched = scenario.prereqs.find(p =>
+        ex.accepts.some(a => normalizeJapanese(a).includes(normalizeJapanese(p.japanese)))
+      );
+      if (matched && !missedPrereqIds.includes(matched.id)) {
+        missedPrereqIds.push(matched.id);
+      }
+    }
+  }
+  if (missedPrereqIds.length === 0) return;
+  drillFromScene = true;
+  exercises = generateScenarioDrill(scenario, missedPrereqIds);
+  currentIndex = 0;
+  sessionResults = [];
+  answered = false;
+  reinforceQueue = [];
+  correctStreak = 0;
+  progressFill.classList.remove('final-stretch');
+  const log = document.getElementById('session-review-log');
+  if (log) log.innerHTML = '';
+  showView('view-session');
+  renderExercise();
+});
+
+document.getElementById('btn-enter-scene-after-drill').addEventListener('click', () => {
+  startScene(scenarios[0]);
 });
 
 // ══════════════════════════════════════════════════════
