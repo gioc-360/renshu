@@ -30,7 +30,7 @@ Rules:
 - registerError is null when register is correct, a string when it's wrong.
 - When in doubt between GOOD and HARD, lean GOOD. The learner is practicing — reward attempts that work.
 - If the normalized input is empty, rate AGAIN with feedback about not responding.
-- For GOOD ratings, still teach something — e.g. "よう (you) — casual and natural, exactly how friends greet each other."
+- For GOOD ratings, teach the social principle behind why their response works — make the learner think about the conversational dynamics at play. e.g. "よう (you) — you matched their energy, which signals you're equals. That sets the register for the whole conversation."
 - For HARD/AGAIN, always show what to say instead with romaji: e.g. "Try よう (you) — こんにちは is for strangers, not friends."`;
 
 const ALLOWED_ORIGIN = 'https://gioc-360.github.io';

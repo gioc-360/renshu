@@ -5652,15 +5652,8 @@ async function submitSceneResponse(userInput) {
     aiEvaluated: !!aiResult,
   });
 
-  // Show next button (or auto-advance if correct)
-  if (isMatch) {
-    setTimeout(() => {
-      sceneState.exchangeIdx++;
-      renderSceneExchange();
-    }, 1200);
-  } else {
-    nextBtn.classList.remove('hidden');
-  }
+  // Always show next button — let the learner sit with the feedback
+  nextBtn.classList.remove('hidden');
 }
 
 function endScene() {

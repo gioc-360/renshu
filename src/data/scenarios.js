@@ -72,7 +72,7 @@ export default [
         ],
         best: 'よう、ひさしぶり！',
         feedback: {
-          correct: 'Casual and natural.',
+          correct: 'Matching their energy — よう for よう. That sets the tone. Now they know you\'re on the same level.',
           close: [
             { pattern: 'こんにちは', msg: 'Too formal for a friend — こんにちは is for strangers. Just よう or ひさしぶり.' },
             { pattern: 'おはようございます', msg: 'Way too formal. Drop the ございます — friends say おはよう at most.' },
@@ -104,7 +104,7 @@ export default [
         ],
         best: 'まあまあ、いそがしいよ',
         feedback: {
-          correct: 'Natural. Friends keep it short.',
+          correct: 'Short and real — that\'s how friends talk. You gave them something to respond to. What will they share next?',
           close: [
             { pattern: 'げんきです', msg: 'Drop the です — too stiff for a friend. Just げんき or げんきだよ.' },
             { pattern: 'いそがしいです', msg: 'です makes it formal. Friends say いそがしい or いそがしいよ.' },
@@ -137,7 +137,7 @@ export default [
         ],
         best: 'まじで？がんばって！',
         feedback: {
-          correct: 'Good reaction. Short and supportive.',
+          correct: 'You acknowledged their stress and backed them up. That\'s what friends do — react, then support. Where does the conversation go from here?',
           close: [
             { pattern: 'がんばってください', msg: 'ください is too polite for a friend. Just がんばって or がんばれ.' },
             { pattern: 'だいじょうぶですか', msg: 'Drop the ですか. Friends say だいじょうぶ？ with rising tone.' },
@@ -171,7 +171,7 @@ export default [
         ],
         best: 'いいね！たのしみ！',
         feedback: {
-          correct: 'Enthusiastic and casual. Perfect.',
+          correct: 'You matched their excitement. In Japanese, enthusiasm is agreement — いいね says "I\'m in" without needing to explain. The conversation\'s winding down now.',
           close: [
             { pattern: 'いいですね', msg: 'Too formal. Friends say いいね, not いいですね.' },
             { pattern: 'しましょう', msg: 'しましょう is polite. Casual version: しよう.' },
@@ -204,7 +204,7 @@ export default [
         ],
         best: 'おつかれ！またね！',
         feedback: {
-          correct: 'Casual goodbye. Nailed it.',
+          correct: 'おつかれ does double duty — "good work" and "take care." It\'s the friend goodbye that says you respect their grind.',
           close: [
             { pattern: 'さようなら', msg: 'さようなら is too formal — almost dramatic. Friends say じゃあね, またね, or おつかれ.' },
             { pattern: 'しつれいします', msg: "That's for leaving a professor's office, not a friend. じゃあね or またね." },
