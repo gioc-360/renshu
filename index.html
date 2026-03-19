@@ -1640,6 +1640,40 @@
       letter-spacing: 0.05em;
     }
 
+    .mic-btn {
+      font-size: 0.6rem;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      letter-spacing: 0;
+    }
+    .mic-btn.mic-listening {
+      color: var(--color-vermillion);
+      border-color: var(--color-vermillion);
+      animation: micPulse 1s ease-in-out infinite;
+    }
+    @keyframes micPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .scene-line.tts-playing {
+      animation: ttsGlow 1.5s ease-in-out infinite;
+    }
+    @keyframes ttsGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .scene-input-locked input,
+    .scene-input-locked .mic-btn,
+    .scene-input-locked button {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
     .production-hint {
       font-size: 0.7rem;
       color: var(--color-text-muted);
@@ -1972,6 +2006,7 @@
       <div class="scene-prompt" id="scene-prompt"></div>
       <div class="production-input-group" id="scene-input-group">
         <input type="text" id="scene-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="">
+        <button id="scene-mic" class="mic-btn" aria-label="Voice input">●</button>
         <button id="scene-submit">→</button>
       </div>
       <div class="scene-feedback hidden" id="scene-feedback"></div>
@@ -5479,6 +5514,112 @@ async function evaluateWithAI(exchange, scenario, userInput, normalized) {
 }
 
 // ══════════════════════════════════════════════════════
+// Voice I/O
+// ══════════════════════════════════════════════════════
+const AI_TTS_URL = 'https://renshu-iota.vercel.app/api/tts';
+const TTS_VOICE = 'nova';
+let ttsAudioElement = null;
+
+async function playYukiLine(text) {
+  const lineEl = document.getElementById('scene-line');
+  lineEl.classList.add('tts-playing');
+
+  try {
+    const res = await fetch(AI_TTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice: TTS_VOICE }),
+    });
+    if (!res.ok) throw new Error('TTS API failed');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    ttsAudioElement = new Audio(url);
+
+    await new Promise((resolve, reject) => {
+      ttsAudioElement.onended = resolve;
+      ttsAudioElement.onerror = reject;
+      ttsAudioElement.play().catch(reject);
+    });
+
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.warn('TTS API failed, falling back to browser speech:', e);
+    await browserTTSFallback(text);
+  } finally {
+    lineEl.classList.remove('tts-playing');
+    ttsAudioElement = null;
+  }
+}
+
+function browserTTSFallback(text) {
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.9;
+    utterance.onend = resolve;
+    utterance.onerror = resolve;
+    speechSynthesis.speak(utterance);
+  });
+}
+
+let recognitionInstance = null;
+
+function listenForSpeech() {
+  return new Promise((resolve) => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      resolve(null);
+      return;
+    }
+
+    if (!recognitionInstance) {
+      recognitionInstance = new SpeechRecognition();
+      recognitionInstance.lang = 'ja-JP';
+      recognitionInstance.interimResults = false;
+      recognitionInstance.maxAlternatives = 1;
+      recognitionInstance.continuous = false;
+    }
+
+    const mic = document.getElementById('scene-mic');
+    mic.classList.add('mic-listening');
+
+    let resolved = false;
+    recognitionInstance.onresult = (event) => {
+      if (resolved) return;
+      resolved = true;
+      const transcript = event.results[0][0].transcript;
+      mic.classList.remove('mic-listening');
+      resolve(transcript);
+    };
+
+    recognitionInstance.onerror = () => {
+      if (resolved) return;
+      resolved = true;
+      mic.classList.remove('mic-listening');
+      resolve(null);
+    };
+
+    recognitionInstance.onend = () => {
+      if (resolved) return;
+      resolved = true;
+      mic.classList.remove('mic-listening');
+      resolve(null);
+    };
+
+    recognitionInstance.start();
+  });
+}
+
+function stopListening() {
+  if (recognitionInstance) {
+    try { recognitionInstance.abort(); } catch (e) {}
+  }
+  const mic = document.getElementById('scene-mic');
+  if (mic) mic.classList.remove('mic-listening');
+}
+
+// ══════════════════════════════════════════════════════
 // Scene Engine (Action mode)
 // ══════════════════════════════════════════════════════
 let sceneState = null; // { scenario, exchangeIdx, results[], nudgeTimer, moveOnTimer }
@@ -5529,6 +5670,9 @@ function renderSceneExchange() {
   nextBtn.classList.add('hidden');
   inputGroup.classList.remove('hidden');
 
+  // Lock input during TTS
+  inputGroup.classList.add('scene-input-locked');
+
   // Populate
   document.getElementById('scene-speaker').textContent = ex.speaker === 'friend' ? 'Yuki' : '';
   document.getElementById('scene-line').textContent = ex.line;
@@ -5536,26 +5680,29 @@ function renderSceneExchange() {
   document.getElementById('scene-prompt').textContent = ex.prompt;
   document.getElementById('scene-progress').textContent = `${exchangeIdx + 1} / ${scenario.exchanges.length}`;
 
-  // Focus input
-  setTimeout(() => input.focus(), 100);
+  // Play Yuki's line, then unlock input and start timers
+  playYukiLine(ex.line).then(() => {
+    inputGroup.classList.remove('scene-input-locked');
+    input.focus();
 
-  // Start nudge timer
-  sceneState.nudgeTimer = setTimeout(() => {
-    nudge.textContent = ex.nudge;
-    nudge.classList.remove('hidden');
-  }, 20000);
+    sceneState.nudgeTimer = setTimeout(() => {
+      nudge.textContent = ex.nudge;
+      nudge.classList.remove('hidden');
+    }, 20000);
 
-  // Start moveOn timer
-  sceneState.moveOnTimer = setTimeout(() => {
-    if (!input.disabled) {
-      submitSceneResponse('');
-    }
-  }, 35000);
+    sceneState.moveOnTimer = setTimeout(() => {
+      if (!input.disabled) {
+        submitSceneResponse('');
+      }
+    }, 35000);
+  });
 }
 
 function clearSceneTimers() {
   if (sceneState.nudgeTimer) { clearTimeout(sceneState.nudgeTimer); sceneState.nudgeTimer = null; }
   if (sceneState.moveOnTimer) { clearTimeout(sceneState.moveOnTimer); sceneState.moveOnTimer = null; }
+  if (ttsAudioElement) { ttsAudioElement.pause(); ttsAudioElement = null; }
+  stopListening();
 }
 
 function normalizeJapanese(str) {
@@ -5734,6 +5881,19 @@ document.getElementById('scene-input').addEventListener('keydown', (e) => {
 document.getElementById('scene-next').addEventListener('click', () => {
   sceneState.exchangeIdx++;
   renderSceneExchange();
+});
+
+document.getElementById('scene-mic').addEventListener('click', async () => {
+  const input = document.getElementById('scene-input');
+  if (input.disabled) return;
+  const inputGroup = document.getElementById('scene-input-group');
+  if (inputGroup.classList.contains('scene-input-locked')) return;
+
+  const transcript = await listenForSpeech();
+  if (transcript) {
+    input.value = transcript;
+    submitSceneResponse(transcript);
+  }
 });
 
 document.getElementById('btn-scene-retry').addEventListener('click', () => {
