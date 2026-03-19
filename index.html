@@ -592,12 +592,9 @@
       word-spacing: 0.4em;
     }
 
-    .kana-map .known {
+    .kana-map span {
       color: var(--color-text);
-    }
-
-    .kana-map .unknown {
-      color: var(--color-border);
+      transition: opacity 0.3s ease;
     }
 
 
@@ -2664,6 +2661,15 @@ function ensureFSRSCards(lessons) {
   return state;
 }
 
+/** Ensure a hiragana character has an FSRS card */
+function ensureHiraFSRSCard(hKey) {
+  const state = loadFSRSState();
+  if (!state[hKey]) {
+    state[hKey] = createCard(hKey, 'hira');
+    saveFSRSState(state);
+  }
+}
+
 /** Map exercise correctness to FSRS rating */
 function exerciseToRating(correct, responseTimeMs) {
   if (!correct) return AGAIN;
@@ -2894,7 +2900,7 @@ function renderKnowledgeDisplay() {
     dueEl.textContent = dueCount > 0 ? `${dueCount} due for review` : 'all caught up';
   }
 
-  // Hiragana character map — known chars dark, unknown light
+  // Hiragana character map — opacity = retrievability (live memory heat map)
   const knownChars = new Set();
   for (let i = 0; i <= groupIdx && i < hiraganaGroups.length; i++) {
     for (const ch of hiraganaGroups[i].characters) knownChars.add(ch.kana);
@@ -2902,7 +2908,6 @@ function renderKnowledgeDisplay() {
 
   const mapEl = document.getElementById('kana-map');
   if (mapEl) {
-    // Build all basic hiragana in traditional row order
     const rows = [
       'あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの',
       'はひふへほ', 'まみむめも', 'やゆよ', 'らりるれろ', 'わをん'
@@ -2910,8 +2915,21 @@ function renderKnowledgeDisplay() {
     let html = '';
     for (const row of rows) {
       for (const ch of row) {
-        const cls = knownChars.has(ch) ? 'known' : 'unknown';
-        html += `<span class="${cls}">${ch}</span>`;
+        if (!knownChars.has(ch)) {
+          // Not yet unlocked
+          html += `<span style="opacity:0.12">${ch}</span>`;
+        } else {
+          const card = fsrsState[`hira_${ch}`];
+          if (!card || card.state === NEW) {
+            // Unlocked but never practiced — show at base level
+            html += `<span style="opacity:0.3">${ch}</span>`;
+          } else {
+            // Practiced — opacity = retrievability (0.2 floor so it's never invisible)
+            const r = retrievability(card);
+            const opacity = 0.2 + 0.8 * r;
+            html += `<span style="opacity:${opacity.toFixed(2)}">${ch}</span>`;
+          }
+        }
       }
       html += ' ';
     }
@@ -3379,6 +3397,7 @@ function makeHiraganaProduce(word) {
     breakdown: word.breakdown,
     explanation: word.breakdown.map(b => `${b.romaji} → ${b.char}`).join(', ') + ` = ${word.kana} = "${word.english}"`,
     _word: word,
+    _hiraChars: word.breakdown.map(b => b.char),
   };
 }
 
@@ -3398,6 +3417,7 @@ function makeHiraganaVocab(vocabItem, allReadableVocab) {
       return shuffle([vocabItem.english, ...distractors]);
     })(),
     explanation: `${vocabItem.kana} (${vocabItem.romaji}) = ${vocabItem.english}`,
+    _hiraChars: [...vocabItem.kana],
   };
 }
 
@@ -4502,6 +4522,14 @@ function setupProductionExercise(ex) {
     if (fsrsKey) {
       updateFSRSCard(fsrsKey, rating);
     }
+    // Track individual hiragana characters in FSRS
+    if (ex._hiraChars && ex._hiraChars.length) {
+      for (const ch of ex._hiraChars) {
+        const hKey = `hira_${ch}`;
+        ensureHiraFSRSCard(hKey);
+        updateFSRSCard(hKey, rating);
+      }
+    }
 
     sessionResults.push({ type: ex.type, correct: isCorrect });
     recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
@@ -4907,7 +4935,7 @@ renderLessonSelector();
 showView('view-start');
 
 // Service Worker — force update on version change
-const APP_VERSION = 5;
+const APP_VERSION = 6;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     // Nuke all old SWs and caches, then re-register
