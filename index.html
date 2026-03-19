@@ -466,6 +466,23 @@
       opacity: 0.7;
     }
 
+    .lesson-pulse {
+      margin-top: 1.5rem;
+      font-family: var(--font-jp);
+      font-size: 0.85rem;
+      line-height: 2;
+      letter-spacing: 0.08em;
+      text-align: center;
+      max-width: 280px;
+    }
+
+    .lesson-pulse span {
+      display: inline-block;
+      color: var(--color-text);
+      transition: opacity 0.3s ease;
+      margin: 0 0.15em;
+    }
+
     /* ── Mode tabs — bottom of viewport ── */
     .mode-selector {
       position: absolute;
@@ -1640,6 +1657,7 @@
       <div class="start-actions" id="start-actions">
         <button class="btn-primary" id="btn-start-session">begin</button>
       </div>
+      <div class="lesson-pulse" id="lesson-pulse"></div>
     </div>
 
     <!-- Mode tabs at bottom -->
@@ -3108,6 +3126,65 @@ function renderStartScreen() {
   renderLessonSelector();
   renderGroupSelector();
   updateModeUI();
+  renderLessonPulse();
+}
+
+/**
+ * Render current lesson/group items below "begin" at their FSRS retrievability.
+ * Same encoding as the kana map — opacity IS the data.
+ */
+function renderLessonPulse() {
+  const el = document.getElementById('lesson-pulse');
+  if (!el) return;
+
+  const history = loadSkillHistory();
+  const fsrsState = loadFSRSState();
+
+  if (currentMode === 'learn' || currentMode === 'learn-katakana') {
+    // Hiragana/Katakana mode — show the group's characters
+    const isKatakana = currentMode === 'learn-katakana';
+    const groups = isKatakana ? katakanaGroups : hiraganaGroups;
+    const groupIdx = isKatakana ? (history.currentKatakanaGroup || 0) : (history.currentGroup || 0);
+    const group = groups[groupIdx];
+    if (!group) { el.innerHTML = ''; return; }
+
+    let html = '';
+    for (const ch of group.characters) {
+      const prefix = isKatakana ? 'kata' : 'hira';
+      const card = fsrsState[`${prefix}_${ch.kana}`];
+      let opacity;
+      if (!card || card.state === NEW) {
+        opacity = 0.2;
+      } else {
+        const r = retrievability(card);
+        opacity = 0.2 + 0.8 * r;
+      }
+      html += `<span style="opacity:${opacity.toFixed(2)}">${ch.kana}</span>`;
+    }
+    el.innerHTML = html;
+  } else {
+    // Practice mode — show current lesson's vocab
+    const lessonIdx = history.currentLesson || 0;
+    const lesson = n5Content.lessons[lessonIdx];
+    if (!lesson || !lesson.vocabulary) { el.innerHTML = ''; return; }
+
+    let html = '';
+    for (let j = 0; j < lesson.vocabulary.length; j++) {
+      const v = lesson.vocabulary[j];
+      const key = `vocab_L${lessonIdx}_${j}`;
+      const card = fsrsState[key];
+      let opacity;
+      if (!card || card.state === NEW) {
+        opacity = 0.2;
+      } else {
+        const r = retrievability(card);
+        opacity = 0.2 + 0.8 * r;
+      }
+      const label = v.kana || v.japanese || v.english;
+      html += `<span style="opacity:${opacity.toFixed(2)}">${label}</span>`;
+    }
+    el.innerHTML = html;
+  }
 }
 
 // ── Mode switching ──────────────────────────────────
@@ -3115,6 +3192,7 @@ window.__setMode = function(mode) {
   currentMode = mode;
   updateModeUI();
   renderProgressionSection();
+  renderLessonPulse();
 };
 
 function updateModeUI() {
@@ -4935,7 +5013,7 @@ renderLessonSelector();
 showView('view-start');
 
 // Service Worker — force update on version change
-const APP_VERSION = 6;
+const APP_VERSION = 7;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     // Nuke all old SWs and caches, then re-register
