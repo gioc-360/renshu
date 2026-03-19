@@ -119,9 +119,10 @@ The test: at no point should a user carry an error they don't know about.
 - Accept-lists remain as offline fallback — zero regression when API is down
 
 **What's next:**
-- Set OPENAI_API_KEY on Vercel and deploy
 - Additional scenarios beyond friend-campus
 - Register detection quality tuning
+- FSRS-driven drill cycling (8-exercise cap, auto-advance when group learned at 0.7 retrievability)
+- Romaji in drills for scenario prereqs (done for friend-campus)
 
 ## Architecture Decisions
 - **Single file**: everything in index.html. Simpler deployment, no build step, easier to iterate. Will split when it becomes a problem, not before.

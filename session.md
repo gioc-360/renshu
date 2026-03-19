@@ -8,7 +8,7 @@ Three modes: Hiragana, Katakana, Action.
 Action absorbs Practice. Scenarios are the organizing unit, not textbook lessons.
 
 ## Constraint Document
-- **In scope:** Production exercises (existing types), FSRS scheduling, scenario-based learning, offline scene interface with accept-lists, AI evaluation as enhancement layer (Claude Haiku), casual + polite register training
+- **In scope:** Production exercises (existing types), FSRS scheduling, scenario-based learning, offline scene interface with accept-lists, AI evaluation as enhancement layer (GPT-4.1-mini via Vercel), casual + polite register training
 - **Out of scope:** Cloud sync, accounts, backend server (proxy OK), N4+ content, gamification, voice input/output, chat UI
 - **Who it serves:** Gio — Cornell MBA, learning Japanese, has friends with some Japanese knowledge. Daily self-study that builds toward real conversations.
 - **Done condition:** Practice a friend scenario in the app, then actually use it with a friend on campus. App skeptic watches and sees someone assembling Japanese in context, not picking from lists.
