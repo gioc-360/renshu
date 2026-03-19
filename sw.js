@@ -1,5 +1,5 @@
 // Service Worker for Renshu PWA
-const CACHE_NAME = 'renshu-v2';
+const CACHE_NAME = 'renshu-v3';
 const ASSETS = [
   './',
   './index.html',
