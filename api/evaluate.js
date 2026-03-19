@@ -106,7 +106,7 @@ module.exports = async function handler(req, res) {
     if (!response.ok) {
       const err = await response.text();
       console.error('OpenAI error:', err);
-      return res.status(502).json({ error: 'AI evaluation failed' });
+      return res.status(502).json({ error: 'AI evaluation failed', detail: err });
     }
 
     const data = await response.json();
