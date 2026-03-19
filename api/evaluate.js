@@ -74,10 +74,12 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { line, lineEn, prompt, register, best, accepts, userInput, normalized, closeFeedback } = req.body;
+  // Vercel auto-parses JSON, but handle string body as fallback
+  const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+  const { line, lineEn, prompt, register, best, accepts, userInput, normalized, closeFeedback } = body;
 
   if (!line || !prompt || normalized === undefined) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields', received: Object.keys(body) });
   }
 
   const userMessage = buildUserMessage({ line, lineEn, prompt, register, best, accepts, userInput, normalized, closeFeedback });
