@@ -4906,9 +4906,25 @@ renderStartScreen();
 renderLessonSelector();
 showView('view-start');
 
-// Service Worker registration
+// Service Worker — force update on version change
+const APP_VERSION = 5;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    // Nuke all old SWs and caches, then re-register
+    const stored = localStorage.getItem('renshu-sw-version');
+    if (stored && parseInt(stored) < APP_VERSION) {
+      Promise.all([
+        ...regs.map(r => r.unregister()),
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      ]).then(() => {
+        localStorage.setItem('renshu-sw-version', APP_VERSION);
+        location.reload();
+      });
+      return;
+    }
+    localStorage.setItem('renshu-sw-version', APP_VERSION);
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
 }
 
 </script>
