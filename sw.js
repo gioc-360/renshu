@@ -1,11 +1,12 @@
 // Service Worker for Renshu PWA
-const CACHE_NAME = 'renshu-v8';
+const CACHE_NAME = 'renshu-v9';
 const ASSETS = [
   './',
   './index.html',
   './src/data/n5-content.js',
   './src/data/hiragana-groups.js',
   './src/data/katakana-groups.js',
+  './src/data/scenarios.js',
   './src/fsrs.js',
   'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap',
 ];

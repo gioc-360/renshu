@@ -2,6 +2,19 @@
 
 **Function:** `renshu(daily_open) → 20min_production_session → measurable_recall_ability`
 
+## Design Philosophy
+
+**Fail loud.** Small errors compound until they're heavy to carry. Every layer of the app makes errors visible and immediate. Nothing stays quiet long enough to compound.
+
+This governs every design decision:
+- **No multiple choice.** Silent errors hide behind lucky guesses. Production-only — you type it or you don't.
+- **No prereq gates.** Delayed failure = delayed learning. Scenes are always open. Jump in, fail, learn what to study.
+- **Retrievability as opacity.** Memory decay announces itself visually — characters and words fade before you notice you've forgotten them.
+- **Scene nudges move on without you.** Silence is the loudest feedback. The moment passes like it would in real life.
+- **AI catches register, not just grammar.** Saying げんきですか to a friend is grammatically correct and socially wrong. That error surfaces in Action mode. It would never surface in a flashcard app.
+
+The test: at no point should a user carry an error they don't know about.
+
 ## What Exists
 
 ### Engine
@@ -70,6 +83,21 @@
 | `src/data/hiragana-groups.js` | 12 progressive hiragana groups with words |
 | `src/data/katakana-groups.js` | Katakana groups |
 | `session.md` | Founding Agent session state |
+
+## What's Next — v2 Action Mode
+
+**Three modes: Hiragana, Katakana, Action.** Action absorbs Practice.
+
+Scenarios replace textbook lessons as the organizing unit. First scenario: "Friend on campus" — you bump into a friend, casual Japanese, 4-5 exchanges. Practice drills the scenario's prerequisite phrases. No gates — scene is always open, fail loud, learn from it.
+
+**Offline-first architecture.** Every scenario ships with pre-written exchanges and accept-lists. Works fully offline. AI (Claude Haiku) is an enhancement layer on top — better feedback, adaptive responses, register detection. User never knows which mode they're in.
+
+**Build order:**
+1. Friend scenario content (casual register phrases + accept-lists)
+2. UI restructure (scenario cards replace lesson dropdown)
+3. Scene interface offline (card-based exchanges, nudges, silent timer)
+4. Feedback loop (scene results → FSRS → practice drills → re-enter)
+5. AI enhancement (Claude Haiku evaluation, proxy, adaptive responses)
 
 ## Architecture Decisions
 - **Single file**: everything in index.html. Simpler deployment, no build step, easier to iterate. Will split when it becomes a problem, not before.

@@ -1783,6 +1783,7 @@
 import n5Content from './src/data/n5-content.js';
 import hiraganaGroups, { confusablePairs } from './src/data/hiragana-groups.js';
 import katakanaGroups, { katakanaConfusablePairs } from './src/data/katakana-groups.js';
+import scenarios from './src/data/scenarios.js';
 import {
   createCard, schedule, retrievability, isDue,
   sortByUrgency, getDueCards, getNewCards,
@@ -5047,7 +5048,7 @@ renderLessonSelector();
 showView('view-start');
 
 // Service Worker — force update on version change
-const APP_VERSION = 8;
+const APP_VERSION = 9;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     // Nuke all old SWs and caches, then re-register
