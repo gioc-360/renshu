@@ -3616,8 +3616,9 @@ function generateScenarioDrill(scenario, filterPrereqIds) {
     exercises.push({
       type: 'reading_recall',
       japanese: p.japanese,
+      romaji: p.romaji || null,
       correct_answer: p.english,
-      explanation: `${p.japanese} = ${p.english}`,
+      explanation: `${p.japanese}${p.romaji ? ' (' + p.romaji + ')' : ''} = ${p.english}`,
       _sceneKey: `scene_${scenario.id}_${p.id}`,
     });
 
@@ -3626,9 +3627,9 @@ function generateScenarioDrill(scenario, filterPrereqIds) {
       type: 'vocab_recall',
       english: p.english,
       correct_kana: p.japanese,
-      correct_romaji: null,
+      correct_romaji: p.romaji || null,
       correct_display: p.japanese,
-      explanation: `${p.english} → ${p.japanese}`,
+      explanation: `${p.english} → ${p.japanese}${p.romaji ? ' (' + p.romaji + ')' : ''}`,
       _sceneKey: `scene_${scenario.id}_${p.id}`,
     });
   }
