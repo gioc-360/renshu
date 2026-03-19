@@ -42,6 +42,7 @@ Surface: Kenya Hara design system, envisioning-information
 - TC2 (v2): Confirmed — one scenario, offline-first, AI as enhancement, text production, casual register, card UI not chat
 - Increments 1-3 (v2): delivered — scenario content, UI restructure, scene engine (offline)
 - Increment 4 (v2): delivered — feedback loop: drill missed from scene results, enter scene from drill complete
+- Increment 5 (v2): delivered — AI evaluation via Vercel + GPT-4.1-mini, accept-list fallback
 
 ## Increment Plan (v2 — Action Mode)
 1. **Friend scenario content** — casual register phrases, accept-lists per exchange, FSRS items

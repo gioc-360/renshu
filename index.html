@@ -330,6 +330,16 @@
       opacity: 0.4;
     }
 
+    .production-input-group input.input-evaluating {
+      border-bottom-color: var(--color-text-muted);
+      animation: evaluatingPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes evaluatingPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     .correct-answer-reveal {
       animation: revealAnswer 0.3s ease-out forwards;
     }
@@ -5425,6 +5435,41 @@ document.querySelector('.app-title').addEventListener('dblclick', () => {
 });
 
 // ══════════════════════════════════════════════════════
+// AI Evaluation (Vercel proxy → GPT-4.1-mini)
+// ══════════════════════════════════════════════════════
+const AI_EVALUATE_URL = 'https://renshu-api.vercel.app/api/evaluate';
+const AI_TIMEOUT_MS = 4000;
+
+async function evaluateWithAI(exchange, scenario, userInput, normalized) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const res = await fetch(AI_EVALUATE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        line: exchange.line,
+        lineEn: exchange.lineEn,
+        prompt: exchange.prompt,
+        register: scenario.register,
+        best: exchange.best,
+        accepts: exchange.accepts,
+        userInput,
+        normalized,
+        closeFeedback: exchange.feedback.close || [],
+      }),
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    clearTimeout(timeout);
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════════
 // Scene Engine (Action mode)
 // ══════════════════════════════════════════════════════
 let sceneState = null; // { scenario, exchangeIdx, results[], nudgeTimer, moveOnTimer }
@@ -5468,7 +5513,7 @@ function renderSceneExchange() {
 
   input.value = '';
   input.disabled = false;
-  input.classList.remove('input-correct', 'input-correct-fast', 'input-incorrect');
+  input.classList.remove('input-correct', 'input-correct-fast', 'input-incorrect', 'input-evaluating');
   feedback.classList.add('hidden');
   feedback.innerHTML = '';
   nudge.classList.add('hidden');
@@ -5508,7 +5553,7 @@ function normalizeJapanese(str) {
   return str.replace(/[\s！？!?、。,.\u3000]/g, '').toLowerCase();
 }
 
-function submitSceneResponse(userInput) {
+async function submitSceneResponse(userInput) {
   clearSceneTimers();
   const { scenario, exchangeIdx } = sceneState;
   const ex = scenario.exchanges[exchangeIdx];
@@ -5519,18 +5564,37 @@ function submitSceneResponse(userInput) {
   input.disabled = true;
 
   const normalized = normalizeJapanese(romajiToKana(userInput));
-  const isMatch = ex.accepts.some(a => normalizeJapanese(a) === normalized);
   const isEmpty = normalized.length === 0;
 
-  // Check for "close" matches (wrong register, etc.)
-  let closeMsg = null;
-  if (!isMatch && !isEmpty && ex.feedback.close) {
-    for (const c of ex.feedback.close) {
-      if (normalized.includes(normalizeJapanese(c.pattern))) {
-        closeMsg = c.msg;
-        break;
+  // ── Try AI evaluation first, fall back to accept-lists ──
+  let isMatch, closeMsg, feedbackText, rating;
+  let aiResult = null;
+
+  if (!isEmpty) {
+    input.classList.add('input-evaluating');
+    aiResult = await evaluateWithAI(ex, scenario, userInput, normalized);
+    input.classList.remove('input-evaluating');
+  }
+
+  if (aiResult) {
+    isMatch = aiResult.acceptable;
+    closeMsg = aiResult.registerError;
+    feedbackText = aiResult.feedback;
+    rating = aiResult.rating === 'GOOD' ? GOOD : aiResult.rating === 'HARD' ? HARD : AGAIN;
+  } else {
+    // Fallback: accept-list matching
+    isMatch = ex.accepts.some(a => normalizeJapanese(a) === normalized);
+    closeMsg = null;
+    if (!isMatch && !isEmpty && ex.feedback.close) {
+      for (const c of ex.feedback.close) {
+        if (normalized.includes(normalizeJapanese(c.pattern))) {
+          closeMsg = c.msg;
+          break;
+        }
       }
     }
+    feedbackText = null;
+    rating = isEmpty ? AGAIN : isMatch ? (closeMsg ? HARD : GOOD) : AGAIN;
   }
 
   // Visual feedback on input
@@ -5548,8 +5612,8 @@ function submitSceneResponse(userInput) {
     fbHtml += `<div class="fb-yours">You didn't respond.</div>`;
     fbHtml += `<div class="fb-best">${ex.best}</div>`;
     fbHtml += `<div class="fb-note">${ex.feedback.miss}</div>`;
-  } else if (isMatch) {
-    fbHtml += `<div class="fb-note">${ex.feedback.correct}</div>`;
+  } else if (isMatch && !closeMsg) {
+    fbHtml += `<div class="fb-note">${feedbackText || ex.feedback.correct}</div>`;
   } else if (closeMsg) {
     fbHtml += `<div class="fb-yours">You said: ${userInput}</div>`;
     fbHtml += `<div class="fb-best">${ex.best}</div>`;
@@ -5557,21 +5621,19 @@ function submitSceneResponse(userInput) {
   } else {
     fbHtml += `<div class="fb-yours">You said: ${userInput}</div>`;
     fbHtml += `<div class="fb-best">${ex.best}</div>`;
-    fbHtml += `<div class="fb-note">${ex.feedback.miss}</div>`;
+    fbHtml += `<div class="fb-note">${feedbackText || ex.feedback.miss}</div>`;
   }
 
   feedback.innerHTML = fbHtml;
   feedback.classList.remove('hidden');
 
   // FSRS: find the closest prereq and rate it
-  const rating = isEmpty ? AGAIN : isMatch ? (closeMsg ? HARD : GOOD) : AGAIN;
-  // Map exchange to a prereq by matching type
   const matchedPrereq = scenario.prereqs.find(p => {
     return ex.accepts.some(a => normalizeJapanese(a).includes(normalizeJapanese(p.japanese)));
   });
   if (matchedPrereq) {
     const fsrsKey = `scene_${scenario.id}_${matchedPrereq.id}`;
-    ensureHiraFSRSCard(fsrsKey); // reuse the ensure function
+    ensureHiraFSRSCard(fsrsKey);
     updateFSRSCard(fsrsKey, rating);
   }
 
@@ -5586,6 +5648,7 @@ function submitSceneResponse(userInput) {
     line: ex.line,
     lineEn: ex.lineEn,
     rating,
+    aiEvaluated: !!aiResult,
   });
 
   // Show next button (or auto-advance if correct)
@@ -5719,7 +5782,7 @@ renderLessonSelector();
 showView('view-start');
 
 // Service Worker — force update on version change
-const APP_VERSION = 11;
+const APP_VERSION = 12;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     // Nuke all old SWs and caches, then re-register

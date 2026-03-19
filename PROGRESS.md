@@ -87,6 +87,8 @@ The test: at no point should a user carry an error they don't know about.
 | `src/data/hiragana-groups.js` | 12 progressive hiragana groups with words |
 | `src/data/katakana-groups.js` | Katakana groups |
 | `src/data/scenarios.js` | Action mode scenarios (friend-campus) |
+| `api/evaluate.js` | Vercel serverless function — GPT-4.1-mini evaluation proxy |
+| `vercel.json` | Vercel CORS + routing config |
 | `session.md` | Founding Agent session state |
 
 ### Action Mode (v2 — built)
@@ -107,8 +109,19 @@ The test: at no point should a user carry an error they don't know about.
 - `drillFromScene` flag tracks drill provenance
 - Scene results show explicit count: "3/5. Some rough spots."
 
+**Increment 5: AI evaluation (built)**
+- Vercel serverless function at `api/evaluate.js` — proxies to GPT-4.1-mini
+- System prompt evaluates register, relevance, naturalness — returns `{ acceptable, rating, feedback, registerError }`
+- `submitSceneResponse` is now async: tries AI first, falls back to accept-lists on failure/timeout (4s)
+- Loading state: subtle opacity pulse on input while evaluating
+- Service worker skips API calls (never cached)
+- CORS locked to `gioc-360.github.io`
+- Accept-lists remain as offline fallback — zero regression when API is down
+
 **What's next:**
-- Increment 5: AI enhancement (Claude Haiku evaluation, API proxy, adaptive responses, register detection)
+- Set OPENAI_API_KEY on Vercel and deploy
+- Additional scenarios beyond friend-campus
+- Register detection quality tuning
 
 ## Architecture Decisions
 - **Single file**: everything in index.html. Simpler deployment, no build step, easier to iterate. Will split when it becomes a problem, not before.

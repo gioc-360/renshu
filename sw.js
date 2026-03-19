@@ -1,5 +1,5 @@
 // Service Worker for Renshu PWA
-const CACHE_NAME = 'renshu-v11';
+const CACHE_NAME = 'renshu-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -28,6 +28,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Never cache API calls (AI evaluation endpoint)
+  if (event.request.url.includes('/api/')) return;
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       // Network-first for HTML (get updates), cache-first for assets
