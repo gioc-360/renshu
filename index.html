@@ -556,34 +556,48 @@
       margin-bottom: 0.75rem;
     }
 
-    .stats-grid {
+    /* ── Knowledge display ────────────────────────────── */
+    .knowledge-hero {
       display: flex;
-      justify-content: flex-start;
-      gap: 2rem;
-      width: 100%;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
     }
 
-    .stat-card {
-      background: transparent;
-      border-radius: 0;
-      padding: 0;
-      text-align: left;
-      border: none;
-    }
-
-    .stat-value {
-      font-size: 1rem;
+    .knowledge-num {
+      font-family: var(--font-jp);
+      font-size: 2.5rem;
       font-weight: 400;
       color: var(--color-text);
-      line-height: 1.4;
+      line-height: 1;
     }
 
-    .stat-label {
-      font-size: 0.65rem;
+    .knowledge-label {
+      font-size: 0.75rem;
       color: var(--color-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-top: 0.125rem;
+      letter-spacing: 0.02em;
+    }
+
+    .knowledge-due {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 1.25rem;
+    }
+
+    .kana-map {
+      font-family: var(--font-jp);
+      font-size: 0.9rem;
+      line-height: 1.8;
+      letter-spacing: 0.15em;
+      word-spacing: 0.4em;
+    }
+
+    .kana-map .known {
+      color: var(--color-text);
+    }
+
+    .kana-map .unknown {
+      color: var(--color-border);
     }
 
 
@@ -1657,23 +1671,14 @@
       <!-- Dynamically populated -->
     </div>
 
-    <!-- Stats -->
+    <!-- Knowledge -->
     <div class="drawer-section">
-      <div class="drawer-section-title">Stats</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="stat-streak">0</div>
-          <div class="stat-label">Streak</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-sessions">0</div>
-          <div class="stat-label">Sessions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-weakest">--</div>
-          <div class="stat-label">Weakest</div>
-        </div>
+      <div class="knowledge-hero">
+        <span class="knowledge-num" id="knowledge-words">0</span>
+        <span class="knowledge-label">words you can read</span>
       </div>
+      <div class="knowledge-due" id="knowledge-due"></div>
+      <div class="kana-map" id="kana-map"></div>
     </div>
 
     <!-- Progress -->
@@ -2868,6 +2873,52 @@ function renderDrawerProfile() {
   });
 }
 
+function renderKnowledgeDisplay() {
+  const history = loadSkillHistory();
+  const groupIdx = history.currentGroup || 0;
+
+  // Hero number: readable words
+  const readable = getReadableN5Vocab(groupIdx, hiraganaGroups);
+  const wordsEl = document.getElementById('knowledge-words');
+  if (wordsEl) wordsEl.textContent = readable.length;
+
+  // Due items from FSRS
+  const fsrsState = loadFSRSState();
+  let dueCount = 0;
+  for (const key in fsrsState) {
+    const card = fsrsState[key];
+    if (card && card.state !== NEW && isDue(card)) dueCount++;
+  }
+  const dueEl = document.getElementById('knowledge-due');
+  if (dueEl) {
+    dueEl.textContent = dueCount > 0 ? `${dueCount} due for review` : 'all caught up';
+  }
+
+  // Hiragana character map — known chars dark, unknown light
+  const knownChars = new Set();
+  for (let i = 0; i <= groupIdx && i < hiraganaGroups.length; i++) {
+    for (const ch of hiraganaGroups[i].characters) knownChars.add(ch.kana);
+  }
+
+  const mapEl = document.getElementById('kana-map');
+  if (mapEl) {
+    // Build all basic hiragana in traditional row order
+    const rows = [
+      'あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの',
+      'はひふへほ', 'まみむめも', 'やゆよ', 'らりるれろ', 'わをん'
+    ];
+    let html = '';
+    for (const row of rows) {
+      for (const ch of row) {
+        const cls = knownChars.has(ch) ? 'known' : 'unknown';
+        html += `<span class="${cls}">${ch}</span>`;
+      }
+      html += ' ';
+    }
+    mapEl.innerHTML = html;
+  }
+}
+
 function renderProgressionSection() {
   const section = $('#progression-section');
   const activeProfile = getActiveProfile();
@@ -3031,11 +3082,8 @@ function renderStartScreen() {
   const activeProfile = getActiveProfile();
   if (!activeProfile) return;
 
-  // Stats (in drawer)
-  const stats = loadStats();
-  $('#stat-streak').textContent = stats.streak || 0;
-  $('#stat-sessions').textContent = stats.totalSessions || 0;
-  $('#stat-weakest').textContent = getWeakestSkill();
+  // Knowledge display (in drawer)
+  renderKnowledgeDisplay();
 
   // Progression (in drawer)
   renderProgressionSection();
