@@ -1763,6 +1763,37 @@ function kanaToRomaji(kana) {
   return result;
 }
 
+/** Convert romaji string to kana */
+function romajiToKana(romaji) {
+  let result = '';
+  let i = 0;
+  const s = romaji.toLowerCase();
+  while (i < s.length) {
+    // Double consonant → っ
+    if (i + 1 < s.length && s[i] === s[i + 1] && 'bcdfghjklmnpqrstvwxyz'.includes(s[i])) {
+      result += 'っ';
+      i++;
+      continue;
+    }
+    // Try 3-char, 2-char, 1-char matches
+    let matched = false;
+    for (const len of [3, 2, 1]) {
+      const chunk = s.substring(i, i + len);
+      if (ROMAJI_TO_KANA[chunk]) {
+        result += ROMAJI_TO_KANA[chunk];
+        i += len;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      result += s[i];
+      i++;
+    }
+  }
+  return result;
+}
+
 /** Check if user input matches expected answer (accepts romaji or kana) */
 function matchesAnswer(userInput, expectedKana, expectedRomaji) {
   const input = userInput.trim().toLowerCase();
@@ -3087,7 +3118,7 @@ function generateLearningSession(groupIdx, groups, confusables) {
   });
 
   // 2. Build varied exercises from current group words
-  const exerciseTypes = ['read', 'spot', 'reverse', 'listen', 'build'];
+  const exerciseTypes = ['read', 'spot', 'reverse', 'listen', 'build', 'produce'];
 
   for (const word of currentGroupWords) {
     // Each word gets 2-3 exercise types (randomly chosen)
@@ -3103,6 +3134,8 @@ function generateLearningSession(groupIdx, groups, confusables) {
         exerciseList.push(makeHiraganaListen(word));
       } else if (t === 'build' && word.breakdown.length >= 2) {
         exerciseList.push(makeHiraganaBuild(word));
+      } else if (t === 'produce') {
+        exerciseList.push(makeHiraganaProduce(word));
       }
     }
   }
@@ -3113,9 +3146,20 @@ function generateLearningSession(groupIdx, groups, confusables) {
     exerciseList.push(makeHiraganaConfusable(pair));
   }
 
+  // 4. Add real N5 vocab readable with known characters
+  if (!isKatakana) {
+    const readableVocab = getReadableN5Vocab(groupIdx, groups);
+    if (readableVocab.length >= 4) {
+      const vocabSample = pickN(readableVocab, Math.min(4, readableVocab.length));
+      for (const v of vocabSample) {
+        exerciseList.push(makeHiraganaVocab(v, readableVocab));
+      }
+    }
+  }
+
   // Smart interleave (but keep intro first), cap at reasonable length
   const intro = exerciseList.shift();
-  const capped = shuffle(exerciseList).slice(0, 15);
+  const capped = shuffle(exerciseList).slice(0, 18);
   return [intro, ...smartInterleave(capped)];
 }
 
@@ -3213,16 +3257,87 @@ function makeHiraganaBuild(word) {
   };
 }
 
+/**
+ * Hiragana Produce: See romaji → type the kana word.
+ * Production direction — forces recall of character shapes.
+ */
+function makeHiraganaProduce(word) {
+  return {
+    type: 'hiragana_produce',
+    romaji: word.romaji,
+    english: word.english,
+    correct_answer: word.kana,
+    breakdown: word.breakdown,
+    explanation: word.breakdown.map(b => `${b.romaji} → ${b.char}`).join(', ') + ` = ${word.kana} = "${word.english}"`,
+    _word: word,
+  };
+}
+
+/**
+ * Hiragana Vocab: Real N5 vocabulary filtered to only use known hiragana.
+ * Bridges "learning symbols" → "reading real Japanese."
+ */
+function makeHiraganaVocab(vocabItem, allReadableVocab) {
+  return {
+    type: 'hiragana_vocab',
+    japanese: vocabItem.kana,
+    romaji: vocabItem.romaji,
+    correct_answer: vocabItem.english,
+    options: (() => {
+      const others = allReadableVocab.filter(v => v.english !== vocabItem.english);
+      const distractors = pickN(others, 3).map(v => v.english);
+      return shuffle([vocabItem.english, ...distractors]);
+    })(),
+    explanation: `${vocabItem.kana} (${vocabItem.romaji}) = ${vocabItem.english}`,
+  };
+}
+
+/**
+ * Get N5 vocab readable with only the hiragana characters learned up to groupIdx.
+ */
+function getReadableN5Vocab(groupIdx, groups) {
+  // Build set of known hiragana characters
+  const knownChars = new Set();
+  for (let i = 0; i <= groupIdx && i < groups.length; i++) {
+    for (const ch of groups[i].characters) {
+      knownChars.add(ch.kana);
+    }
+  }
+  // Small kana used in combos
+  knownChars.add('っ'); knownChars.add('ゃ'); knownChars.add('ゅ'); knownChars.add('ょ');
+  // Long vowel mark
+  knownChars.add('ー');
+
+  // Filter N5 vocab: every character in the kana must be in knownChars
+  const readable = [];
+  for (const lesson of n5Content.lessons) {
+    for (const v of lesson.vocabulary) {
+      const kana = v.kana;
+      if (!kana || kana.length === 0) continue;
+      // Skip words with katakana or kanji
+      let allKnown = true;
+      for (const ch of kana) {
+        if (!knownChars.has(ch)) { allKnown = false; break; }
+      }
+      if (allKnown && kana.length >= 2) {
+        readable.push(v);
+      }
+    }
+  }
+  return readable;
+}
+
 // Learning mode reinforcement: wrong answers come back as a different type
 function makeLearningReinforcement(wrongEx) {
   const word = wrongEx._word;
   if (!word) return null;
   const wrongType = wrongEx.type;
-  const alternatives = ['hiragana_read', 'hiragana_listen', 'hiragana_build'].filter(t => t !== wrongType);
+  const alternatives = ['hiragana_read', 'hiragana_listen', 'hiragana_build', 'hiragana_produce'].filter(t => t !== wrongType);
   const newType = alternatives[Math.floor(Math.random() * alternatives.length)];
   if (newType === 'hiragana_read') return makeHiraganaRead(word);
   if (newType === 'hiragana_listen') return makeHiraganaListen(word);
   if (newType === 'hiragana_build' && word.breakdown.length >= 2) return makeHiraganaBuild(word);
+  if (newType === 'hiragana_produce') return makeHiraganaProduce(word);
   return makeHiraganaRead(word);
 }
 
@@ -3275,6 +3390,8 @@ function renderExerciseContent(ex) {
     hiragana_listen: 'Listen & Type',
     hiragana_confusable: 'Look-Alikes',
     hiragana_build: 'Build the Word',
+    hiragana_produce: 'Type Kana',
+    hiragana_vocab: 'Read Real Words',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -3328,6 +3445,12 @@ function renderExerciseContent(ex) {
     case 'hiragana_build':
       html += renderHiraganaBuild(ex);
       break;
+    case 'hiragana_produce':
+      html += renderHiraganaProduce(ex);
+      break;
+    case 'hiragana_vocab':
+      html += renderHiraganaVocab(ex);
+      break;
     default:
       html += `<p>Unknown exercise type: ${type}</p>`;
   }
@@ -3352,6 +3475,8 @@ function renderExerciseContent(ex) {
     setupPronunciation(ex);
   } else if (type === 'vocab_recall' || type === 'particle_recall' || type === 'reading_recall') {
     setupProductionExercise(ex);
+  } else if (type === 'hiragana_produce') {
+    setupHiraganaProduce(ex);
   }
 }
 
@@ -3623,6 +3748,87 @@ function setupHiraganaBuild(ex) {
     showExplanation(isCorrect, breakdownHtml + ` = ${ex.romaji} = "${ex.english}"`, isCorrect ? null : ex.correct_answer, ex);
     showNextButton(isCorrect);
   });
+}
+
+// ── Hiragana Produce (see romaji → type kana) ───────
+function renderHiraganaProduce(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">Type in kana</p>
+      <p style="font-size:1.5rem; font-weight:700;">${escHtml(ex.romaji)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted);">${escHtml(ex.english)}</p>
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="produce-input" placeholder="type kana..." autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja" />
+      <button id="produce-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupHiraganaProduce(ex) {
+  const input = exerciseCard.querySelector('#produce-input');
+  const checkBtn = exerciseCard.querySelector('#produce-check');
+  if (!input || !checkBtn) return;
+
+  setTimeout(() => input.focus(), 300);
+
+  function checkAnswer() {
+    if (answered) return;
+    const userAnswer = input.value.trim();
+    if (!userAnswer) return;
+
+    // Convert romaji input to kana for comparison
+    let userKana = userAnswer;
+    // If user typed romaji, convert it
+    if (/^[a-zA-Z]+$/.test(userAnswer)) {
+      userKana = romajiToKana(userAnswer.toLowerCase());
+    }
+    const isCorrect = userKana === ex.correct_answer ||
+                      normalizeRomaji(userAnswer.toLowerCase()) === normalizeRomaji(ex.romaji);
+
+    answered = true;
+    input.disabled = true;
+    checkBtn.disabled = true;
+    input.classList.add(isCorrect ? 'input-correct' : 'input-incorrect');
+
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect);
+
+    if (!isCorrect) {
+      reinforceQueue.push(ex);
+      const slot = exerciseCard.querySelector('#explanation-slot');
+      if (slot) {
+        slot.innerHTML = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text jp" style="font-size:1.5rem;">${escHtml(ex.correct_answer)}</p>
+        </div>`;
+      }
+    }
+
+    showExplanation(isCorrect, ex.explanation, isCorrect ? null : ex.correct_answer, ex);
+    showNextButton(isCorrect);
+  }
+
+  checkBtn.addEventListener('click', checkAnswer);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
+}
+
+// ── Hiragana Vocab (real N5 words with known characters) ──
+function renderHiraganaVocab(ex) {
+  let html = `
+    <div class="exercise-prompt">
+      <p class="instruction">Read this real word</p>
+      <p class="japanese-text">${escHtml(ex.japanese)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted);">${escHtml(ex.romaji)}</p>
+    </div>
+    <div class="options-grid" data-correct="${escAttr(ex.correct_answer)}">
+  `;
+  for (const opt of ex.options) {
+    html += `<button class="btn-option" data-answer="${escAttr(opt)}" onclick="window.__selectOption(this)">${escHtml(opt)}</button>`;
+  }
+  html += `</div><div id="explanation-slot"></div>`;
+  return html;
 }
 
 // ── Vocab Quiz ──────────────────────────────────────
@@ -4419,6 +4625,8 @@ function finishSession() {
     hiragana_listen: 'Listen & Type',
     hiragana_confusable: 'Look-Alikes',
     hiragana_build: 'Build the Word',
+    hiragana_produce: 'Type Kana',
+    hiragana_vocab: 'Read Real Words',
   };
 
   const breakdownList = $('#breakdown-list');
