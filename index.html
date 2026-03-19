@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <style>
     /* ── Custom Properties ── Kenya Hara Design System ── */
     :root {
@@ -1458,6 +1462,72 @@
       letter-spacing: 0.02em;
     }
 
+    /* ── Production Exercise Input ─────────────────────── */
+    .production-input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      align-items: stretch;
+    }
+    .production-input-group input {
+      flex: 1;
+      font-size: 1.1rem;
+      font-family: var(--font-jp);
+      padding: 0.6rem 0.75rem;
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text);
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+    .production-input-group input:focus {
+      border-bottom-color: var(--color-text);
+    }
+    .production-input-group input.input-correct {
+      border-bottom-color: var(--color-text);
+    }
+    .production-input-group input.input-incorrect {
+      border-bottom-color: var(--color-vermillion);
+    }
+    .production-input-group button {
+      font-size: 0.8rem;
+      font-family: var(--font-en);
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+
+    .production-hint {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      margin-top: 0.5rem;
+      letter-spacing: 0.03em;
+      text-align: center;
+    }
+
+    .correct-answer-reveal {
+      margin-top: 1rem;
+      padding: 1rem 0;
+      border-top: 1px solid var(--color-border-light);
+      text-align: center;
+    }
+    .correct-answer-reveal .answer-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-muted);
+      margin-bottom: 0.25rem;
+    }
+    .correct-answer-reveal .answer-text {
+      font-family: var(--font-jp);
+      font-size: 1.5rem;
+      color: var(--color-text);
+    }
+
     /* ── Utility ──────────────────────────────────────── */
     .hidden {
       display: none !important;
@@ -1615,6 +1685,104 @@
 import n5Content from './src/data/n5-content.js';
 import hiraganaGroups, { confusablePairs } from './src/data/hiragana-groups.js';
 import katakanaGroups, { katakanaConfusablePairs } from './src/data/katakana-groups.js';
+import {
+  createCard, schedule, retrievability, isDue,
+  sortByUrgency, getDueCards, getNewCards,
+  AGAIN, HARD, GOOD, EASY, NEW, REVIEW
+} from './src/fsrs.js';
+
+// ══════════════════════════════════════════════════════
+// Romaji ↔ Kana Conversion (for production exercise input)
+// ══════════════════════════════════════════════════════
+const ROMAJI_TO_KANA = {
+  'a':'あ','i':'い','u':'う','e':'え','o':'お',
+  'ka':'か','ki':'き','ku':'く','ke':'け','ko':'こ',
+  'sa':'さ','shi':'し','si':'し','su':'す','se':'せ','so':'そ',
+  'ta':'た','chi':'ち','ti':'ち','tsu':'つ','tu':'つ','te':'て','to':'と',
+  'na':'な','ni':'に','nu':'ぬ','ne':'ね','no':'の',
+  'ha':'は','hi':'ひ','fu':'ふ','hu':'ふ','he':'へ','ho':'ほ',
+  'ma':'ま','mi':'み','mu':'む','me':'め','mo':'も',
+  'ya':'や','yu':'ゆ','yo':'よ',
+  'ra':'ら','ri':'り','ru':'る','re':'れ','ro':'ろ',
+  'wa':'わ','wo':'を','n':'ん',
+  'ga':'が','gi':'ぎ','gu':'ぐ','ge':'げ','go':'ご',
+  'za':'ざ','ji':'じ','zi':'じ','zu':'ず','ze':'ぜ','zo':'ぞ',
+  'da':'だ','di':'ぢ','du':'づ','de':'で','do':'ど',
+  'ba':'ば','bi':'び','bu':'ぶ','be':'べ','bo':'ぼ',
+  'pa':'ぱ','pi':'ぴ','pu':'ぷ','pe':'ぺ','po':'ぽ',
+  'kya':'きゃ','kyu':'きゅ','kyo':'きょ',
+  'sha':'しゃ','shu':'しゅ','sho':'しょ','sya':'しゃ','syu':'しゅ','syo':'しょ',
+  'cha':'ちゃ','chu':'ちゅ','cho':'ちょ','tya':'ちゃ','tyu':'ちゅ','tyo':'ちょ',
+  'nya':'にゃ','nyu':'にゅ','nyo':'にょ',
+  'hya':'ひゃ','hyu':'ひゅ','hyo':'ひょ',
+  'mya':'みゃ','myu':'みゅ','myo':'みょ',
+  'rya':'りゃ','ryu':'りゅ','ryo':'りょ',
+  'gya':'ぎゃ','gyu':'ぎゅ','gyo':'ぎょ',
+  'ja':'じゃ','ju':'じゅ','jo':'じょ',
+  'bya':'びゃ','byu':'びゅ','byo':'びょ',
+  'pya':'ぴゃ','pyu':'ぴゅ','pyo':'ぴょ',
+};
+
+const KANA_TO_ROMAJI = {};
+for (const [r, k] of Object.entries(ROMAJI_TO_KANA)) {
+  if (!KANA_TO_ROMAJI[k]) KANA_TO_ROMAJI[k] = r;
+}
+// Prefer standard romanizations
+KANA_TO_ROMAJI['し'] = 'shi';
+KANA_TO_ROMAJI['ち'] = 'chi';
+KANA_TO_ROMAJI['つ'] = 'tsu';
+KANA_TO_ROMAJI['ふ'] = 'fu';
+
+/** Convert kana string to romaji */
+function kanaToRomaji(kana) {
+  let result = '';
+  let i = 0;
+  while (i < kana.length) {
+    // Try two-character combo first (for combined sounds)
+    if (i + 1 < kana.length) {
+      const two = kana.substring(i, i + 2);
+      if (KANA_TO_ROMAJI[two]) {
+        result += KANA_TO_ROMAJI[two];
+        i += 2;
+        continue;
+      }
+    }
+    const one = kana[i];
+    if (KANA_TO_ROMAJI[one]) {
+      result += KANA_TO_ROMAJI[one];
+    } else if (one === 'っ' || one === 'ッ') {
+      // Double consonant: peek next char
+      if (i + 1 < kana.length && KANA_TO_ROMAJI[kana[i + 1]]) {
+        result += KANA_TO_ROMAJI[kana[i + 1]][0];
+      }
+    } else {
+      result += one;
+    }
+    i++;
+  }
+  return result;
+}
+
+/** Check if user input matches expected answer (accepts romaji or kana) */
+function matchesAnswer(userInput, expectedKana, expectedRomaji) {
+  const input = userInput.trim().toLowerCase();
+  if (!input) return false;
+
+  const normRomaji = normalizeRomaji(expectedRomaji || kanaToRomaji(expectedKana));
+  const normInput = normalizeRomaji(input);
+
+  // Direct romaji match
+  if (normInput === normRomaji) return true;
+
+  // Kana match
+  if (input === expectedKana) return true;
+
+  // Input is kana, convert to romaji and compare
+  const inputAsRomaji = normalizeRomaji(kanaToRomaji(input));
+  if (inputAsRomaji === normRomaji) return true;
+
+  return false;
+}
 
 // ══════════════════════════════════════════════════════
 // Exercise Generation (inline — lesson-aware Genki I curriculum)
@@ -1890,6 +2058,66 @@ function makeReinforcement(wrongExercise, lessonVocab, lessonSentences) {
   return null;
 }
 
+// ── Production Exercise Makers ────────────────────────
+
+/**
+ * Vocab Recall: See English → type the Japanese word (kana or romaji).
+ * No multiple choice. Pure production from memory.
+ */
+function makeVocabRecall(allVocab, vocabKey, currentLessonVocab) {
+  const item = vocabKey
+    ? allVocab.find(v => v._globalKey === vocabKey) || pickOne(allVocab)
+    : pickOne(allVocab);
+  return {
+    type: 'vocab_recall',
+    english: item.english,
+    correct_kana: item.kana,
+    correct_romaji: item.romaji,
+    correct_display: item.kanji || item.kana,
+    explanation: `${item.kana} (${item.romaji}) = ${item.english}`,
+    _vocabIndex: item._globalKey,
+  };
+}
+
+/**
+ * Particle Recall: Sentence with blank → type the correct particle.
+ * No options shown. Production from memory.
+ */
+function makeParticleRecall(allGrammarFills, grammarKey, currentLessonGrammar) {
+  const sourcePool = grammarKey
+    ? allGrammarFills
+    : (currentLessonGrammar && currentLessonGrammar.length > 0 ? currentLessonGrammar : allGrammarFills);
+  const item = grammarKey
+    ? allGrammarFills.find(g => g._globalKey === grammarKey) || pickOne(sourcePool)
+    : pickOne(sourcePool);
+  return {
+    type: 'particle_recall',
+    question: item.sentence,
+    romaji: item.reading || item.romaji || null,
+    correct_answer: item.correct_answer,
+    explanation: item.explanation,
+    _grammarIndex: item._globalKey,
+  };
+}
+
+/**
+ * Reading Recall: See Japanese sentence → type its English meaning.
+ * No multiple choice. Tests reading comprehension via production.
+ */
+function makeReadingRecall(allSentences, currentLessonSentences) {
+  const sourcePool = (currentLessonSentences && currentLessonSentences.length > 0)
+    ? currentLessonSentences : allSentences;
+  if (sourcePool.length === 0) return null;
+  const item = pickOne(sourcePool);
+  return {
+    type: 'reading_recall',
+    japanese: item.japanese,
+    romaji: item.romaji || null,
+    correct_answer: item.english,
+    explanation: `${item.japanese} (${item.romaji}) = ${item.english}`,
+  };
+}
+
 function generateExercises(content, count = 13) {
   const history = loadSkillHistory();
   const lessons = content.lessons;
@@ -1907,23 +2135,30 @@ function generateExercises(content, count = 13) {
 
   checkLessonAdvancement(history, lessons);
 
+  // Ensure all items have FSRS cards
+  ensureFSRSCards(lessons);
+  const fsrsState = loadFSRSState();
+
   const currentLessonIdx = history.currentLesson || 0;
   const currentLesson = lessons[currentLessonIdx];
-  // STRICT CONTAINMENT: only use current lesson's content
-  // No cross-lesson pooling — exercises come from this lesson only
-  const lessonVocab = getVocabUpToLesson(lessons, currentLessonIdx).filter(v => v._lessonIdx === currentLessonIdx);
-  const lessonSentences = getSentencesUpToLesson(lessons, currentLessonIdx).filter(s => s._lessonIdx === currentLessonIdx);
-  const lessonGrammarFills = getGrammarFillsUpToLesson(lessons, currentLessonIdx).filter(g => g._lessonIdx === currentLessonIdx);
-  const lessonSentenceBuilds = getSentenceBuildsUpToLesson(lessons, currentLessonIdx).filter(b => b._lessonIdx === currentLessonIdx);
+
+  // Get content from current lesson AND all previous lessons (for FSRS review)
+  const allVocab = getVocabUpToLesson(lessons, currentLessonIdx);
+  const lessonVocab = allVocab.filter(v => v._lessonIdx === currentLessonIdx);
+  const allSentences = getSentencesUpToLesson(lessons, currentLessonIdx);
+  const lessonSentences = allSentences.filter(s => s._lessonIdx === currentLessonIdx);
+  const allGrammarFills = getGrammarFillsUpToLesson(lessons, currentLessonIdx);
+  const lessonGrammarFills = allGrammarFills.filter(g => g._lessonIdx === currentLessonIdx);
+  const allSentenceBuilds = getSentenceBuildsUpToLesson(lessons, currentLessonIdx);
+  const lessonSentenceBuilds = allSentenceBuilds.filter(b => b._lessonIdx === currentLessonIdx);
 
   const exercises = [];
 
-  // NEW vocab items to introduce (3-5)
+  // ── PHASE 1: New items (recognition exercises — easier first exposure) ──
   const unseenVocab = lessonVocab.filter(v => !history.seenVocab.includes(v._globalKey));
   const newVocabCount = Math.min(3 + Math.floor(Math.random() * 3), unseenVocab.length);
   const newVocabKeys = unseenVocab.slice(0, newVocabCount).map(v => v._globalKey);
 
-  // NEW grammar fills (1-2)
   const unseenGrammar = lessonGrammarFills.filter(g => !history.seenGrammar.includes(g._globalKey));
   const newGrammarCount = Math.min(1 + Math.floor(Math.random() * 2), unseenGrammar.length);
   const newGrammarKeys = unseenGrammar.slice(0, newGrammarCount).map(g => g._globalKey);
@@ -1937,74 +2172,82 @@ function generateExercises(content, count = 13) {
   }
   saveSkillHistory(history);
 
-  // Exercises for NEW vocab
+  // New vocab → recognition (multiple choice) for first exposure
   for (const key of newVocabKeys) {
     exercises.push(makeVocabQuiz(lessonVocab, key, lessonVocab));
   }
 
-  // Exercises for NEW grammar
+  // New grammar → recognition (multiple choice) for first exposure
   for (const key of newGrammarKeys) {
     exercises.push(makeGrammarFill(lessonGrammarFills, key, lessonGrammarFills));
   }
 
-  // One sentence_build and one reading (if this lesson has them)
-  if (lessonSentenceBuilds.length > 0) {
-    const sb = makeSentenceBuild(lessonSentenceBuilds, lessonSentenceBuilds);
-    if (sb) exercises.push(sb);
-  }
-  if (lessonSentences.length >= 3) {
-    const rd = makeReading(lessonSentences, lessonSentences);
-    if (rd) exercises.push(rd);
-  }
-
-  // Review pool: seen vocab from THIS lesson only
-  const lessonVocabKeys = lessonVocab.map(v => v._globalKey);
-  const reviewVocabPool = history.seenVocab
-    .filter(k => lessonVocabKeys.includes(k) && !newVocabKeys.includes(k));
-  const sortedReviewVocab = [...reviewVocabPool].sort((a, b) => {
-    const ca = history.vocabCorrectCounts[a] || 0;
-    const cb = history.vocabCorrectCounts[b] || 0;
-    return ca - cb;
-  });
-
-  const lessonGrammarKeys = lessonGrammarFills.map(g => g._globalKey);
-  const reviewGrammarPool = history.seenGrammar
-    .filter(k => lessonGrammarKeys.includes(k) && !newGrammarKeys.includes(k));
-
-  // Fill remaining slots — if lesson doesn't have enough content, stop early
-  let emptyRounds = 0;
-  while (exercises.length < count && emptyRounds < 3) {
-    const rand = Math.random();
-    const prevLength = exercises.length;
-
-    {
-      // Full exercise mix from this lesson only
-      if (rand < 0.35 && sortedReviewVocab.length > 0) {
-        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * Math.min(sortedReviewVocab.length, 5))];
-        exercises.push(makeVocabQuiz(lessonVocab, reviewKey, lessonVocab));
-      } else if (rand < 0.50 && sortedReviewVocab.length > 0) {
-        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
-        exercises.push(makeListening(lessonVocab, reviewKey, lessonVocab));
-      } else if (rand < 0.65 && sortedReviewVocab.length > 0) {
-        const reviewKey = sortedReviewVocab[Math.floor(Math.random() * sortedReviewVocab.length)];
-        exercises.push(makePronunciation(lessonVocab, lessonSentences, reviewKey));
-      } else if (rand < 0.75 && reviewGrammarPool.length > 0) {
-        const reviewKey = reviewGrammarPool[Math.floor(Math.random() * reviewGrammarPool.length)];
-        exercises.push(makeGrammarFill(lessonGrammarFills, reviewKey, lessonGrammarFills));
-      } else if (rand < 0.85 && lessonSentenceBuilds.length > 0) {
-        const sb = makeSentenceBuild(lessonSentenceBuilds, lessonSentenceBuilds);
-        if (sb) exercises.push(sb);
-      } else if (lessonSentences.length >= 3) {
-        const rd = makeReading(lessonSentences, lessonSentences);
-        if (rd) exercises.push(rd);
-      } else if (lessonVocab.length >= 4) {
-        exercises.push(makeVocabQuiz(lessonVocab, null, lessonVocab));
-      }
+  // ── PHASE 2: FSRS-driven review (production exercises — construct from memory) ──
+  // Find all due vocab items across unlocked lessons
+  const dueVocabKeys = [];
+  for (const v of allVocab) {
+    const fsrsKey = `vocab_${v._globalKey}`;
+    const card = fsrsState[fsrsKey];
+    if (card && card.state !== NEW && isDue(card) && !newVocabKeys.includes(v._globalKey)) {
+      dueVocabKeys.push({ key: v._globalKey, fsrsKey, overdue: Date.now() - new Date(card.due).getTime() });
     }
+  }
+  // Sort by most overdue first
+  dueVocabKeys.sort((a, b) => b.overdue - a.overdue);
 
-    // If nothing was added this round, the lesson doesn't have enough content
-    if (exercises.length === prevLength) emptyRounds++;
-    else emptyRounds = 0;
+  const dueGrammarKeys = [];
+  for (const g of allGrammarFills) {
+    const fsrsKey = `grammar_${g._globalKey}`;
+    const card = fsrsState[fsrsKey];
+    if (card && card.state !== NEW && isDue(card) && !newGrammarKeys.includes(g._globalKey)) {
+      dueGrammarKeys.push({ key: g._globalKey, fsrsKey, overdue: Date.now() - new Date(card.due).getTime() });
+    }
+  }
+  dueGrammarKeys.sort((a, b) => b.overdue - a.overdue);
+
+  // Fill with production exercises for due items
+  const productionSlots = count - exercises.length;
+  let vocabReviewIdx = 0;
+  let grammarReviewIdx = 0;
+
+  for (let i = 0; i < productionSlots; i++) {
+    const rand = Math.random();
+
+    if (rand < 0.30 && vocabReviewIdx < dueVocabKeys.length) {
+      // Vocab recall (production) — type the Japanese word
+      const { key } = dueVocabKeys[vocabReviewIdx++];
+      exercises.push(makeVocabRecall(allVocab, key, lessonVocab));
+    } else if (rand < 0.45 && grammarReviewIdx < dueGrammarKeys.length) {
+      // Particle recall (production) — type the particle
+      const { key } = dueGrammarKeys[grammarReviewIdx++];
+      exercises.push(makeParticleRecall(allGrammarFills, key, lessonGrammarFills));
+    } else if (rand < 0.55 && allSentences.length > 0) {
+      // Reading recall (production) — type English meaning
+      const rr = makeReadingRecall(allSentences, lessonSentences);
+      if (rr) exercises.push(rr);
+    } else if (rand < 0.65 && vocabReviewIdx < dueVocabKeys.length) {
+      // Listening (recognition but with audio)
+      const { key } = dueVocabKeys[vocabReviewIdx++];
+      exercises.push(makeListening(allVocab, key, lessonVocab));
+    } else if (rand < 0.75 && allVocab.length > 0) {
+      // Pronunciation (production — speak aloud)
+      const vocabKey = vocabReviewIdx < dueVocabKeys.length
+        ? dueVocabKeys[vocabReviewIdx++].key : null;
+      exercises.push(makePronunciation(allVocab, allSentences, vocabKey));
+    } else if (rand < 0.85 && lessonSentenceBuilds.length > 0) {
+      // Sentence build (production — arrange words)
+      const sb = makeSentenceBuild(allSentenceBuilds, lessonSentenceBuilds);
+      if (sb) exercises.push(sb);
+    } else if (vocabReviewIdx < dueVocabKeys.length) {
+      // Fallback: vocab recall
+      const { key } = dueVocabKeys[vocabReviewIdx++];
+      exercises.push(makeVocabRecall(allVocab, key, lessonVocab));
+    } else if (allVocab.length >= 4) {
+      // Fallback: vocab quiz if no due items left
+      exercises.push(makeVocabQuiz(allVocab, null, lessonVocab));
+    } else {
+      break;
+    }
   }
 
   return smartInterleave(exercises);
@@ -2195,7 +2438,7 @@ function updateStatsAfterSession() {
 
 function getWeakestSkill() {
   const history = loadSkillHistory();
-  const exerciseTypes = ['vocab_quiz', 'grammar_fill', 'sentence_build', 'reading', 'listening', 'pronunciation'];
+  const exerciseTypes = ['vocab_quiz', 'grammar_fill', 'sentence_build', 'reading', 'listening', 'pronunciation', 'vocab_recall', 'particle_recall', 'reading_recall'];
 
   let weakest = null;
   let lowestRate = Infinity;
@@ -2218,10 +2461,81 @@ function getWeakestSkill() {
     sentence_build: 'Build',
     reading: 'Reading',
     listening: 'Listen',
-    pronunciation: 'Pronun.'
+    pronunciation: 'Pronun.',
+    vocab_recall: 'Recall',
+    particle_recall: 'Particles',
+    reading_recall: 'Translate'
   };
 
   return labels[weakest] || weakest;
+}
+
+// ══════════════════════════════════════════════════════
+// FSRS State Management (profile-scoped)
+// ══════════════════════════════════════════════════════
+function loadFSRSState() {
+  const profile = getActiveProfile();
+  if (!profile) return {};
+  try {
+    return JSON.parse(localStorage.getItem(`renshu_profile_${profile}_fsrs`)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveFSRSState(state) {
+  const profile = getActiveProfile();
+  if (!profile) return;
+  localStorage.setItem(`renshu_profile_${profile}_fsrs`, JSON.stringify(state));
+}
+
+function getFSRSCard(itemId, itemType) {
+  const state = loadFSRSState();
+  if (state[itemId]) return state[itemId];
+  const card = createCard(itemId, itemType);
+  state[itemId] = card;
+  saveFSRSState(state);
+  return card;
+}
+
+function updateFSRSCard(itemId, rating) {
+  const state = loadFSRSState();
+  const card = state[itemId];
+  if (!card) return;
+  state[itemId] = schedule(card, rating);
+  saveFSRSState(state);
+  return state[itemId];
+}
+
+/** Ensure all content items have FSRS cards */
+function ensureFSRSCards(lessons) {
+  const state = loadFSRSState();
+  let changed = false;
+  for (let i = 0; i < lessons.length; i++) {
+    for (let j = 0; j < lessons[i].vocabulary.length; j++) {
+      const key = `vocab_L${i}_${j}`;
+      if (!state[key]) {
+        state[key] = createCard(key, 'vocab');
+        changed = true;
+      }
+    }
+    for (let j = 0; j < (lessons[i].grammarFills || []).length; j++) {
+      const key = `grammar_G${i}_${j}`;
+      if (!state[key]) {
+        state[key] = createCard(key, 'grammar');
+        changed = true;
+      }
+    }
+  }
+  if (changed) saveFSRSState(state);
+  return state;
+}
+
+/** Map exercise correctness to FSRS rating */
+function exerciseToRating(correct, responseTimeMs) {
+  if (!correct) return AGAIN;
+  if (responseTimeMs !== undefined && responseTimeMs < 2000) return EASY;
+  return GOOD;
 }
 
 function recordExerciseResult(type, correct, vocabKey, grammarKey) {
@@ -2265,6 +2579,29 @@ function recordExerciseResult(type, correct, vocabKey, grammarKey) {
       history.grammarCorrectCounts[grammarKey] += 1;
       if (history.grammarCorrectCounts[grammarKey] >= 2 && !history.learnedGrammar.includes(grammarKey)) {
         history.learnedGrammar.push(grammarKey);
+      }
+    }
+  }
+
+  // Update FSRS card (skip for production exercises — they update FSRS in setupProductionExercise with timing-based rating)
+  const productionTypes = ['vocab_recall', 'particle_recall', 'reading_recall'];
+  if (!productionTypes.includes(type)) {
+    if (vocabKey !== undefined && vocabKey !== null) {
+      const fsrsKey = `vocab_${vocabKey}`;
+      const fsrsState = loadFSRSState();
+      if (fsrsState[fsrsKey]) {
+        const rating = correct ? GOOD : AGAIN;
+        fsrsState[fsrsKey] = schedule(fsrsState[fsrsKey], rating);
+        saveFSRSState(fsrsState);
+      }
+    }
+    if (grammarKey !== undefined && grammarKey !== null) {
+      const fsrsKey = `grammar_${grammarKey}`;
+      const fsrsState = loadFSRSState();
+      if (fsrsState[fsrsKey]) {
+        const rating = correct ? GOOD : AGAIN;
+        fsrsState[fsrsKey] = schedule(fsrsState[fsrsKey], rating);
+        saveFSRSState(fsrsState);
       }
     }
   }
@@ -2891,6 +3228,9 @@ function renderExerciseContent(ex) {
     reading: 'Reading',
     listening: 'Listening',
     pronunciation: 'Pronunciation',
+    vocab_recall: 'Recall',
+    particle_recall: 'Particle Recall',
+    reading_recall: 'Translation',
     hiragana_read: 'Read It',
     hiragana_spot: 'Spot It',
     hiragana_reverse: 'Read & Choose',
@@ -2919,6 +3259,15 @@ function renderExerciseContent(ex) {
       break;
     case 'pronunciation':
       html += renderPronunciation(ex);
+      break;
+    case 'vocab_recall':
+      html += renderVocabRecall(ex);
+      break;
+    case 'particle_recall':
+      html += renderParticleRecall(ex);
+      break;
+    case 'reading_recall':
+      html += renderReadingRecall(ex);
       break;
     case 'hiragana_intro':
       html += renderHiraganaIntro(ex);
@@ -2963,6 +3312,8 @@ function renderExerciseContent(ex) {
     setTimeout(() => speakJapanese(ex.japanese || ex.question), 400);
   } else if (type === 'pronunciation') {
     setupPronunciation(ex);
+  } else if (type === 'vocab_recall' || type === 'particle_recall' || type === 'reading_recall') {
+    setupProductionExercise(ex);
   }
 }
 
@@ -3681,6 +4032,153 @@ function speakJapanese(text) {
   speechSynthesis.speak(utter);
 }
 
+// ── Production Exercise Renderers ────────────────────
+
+function renderVocabRecall(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">Type the Japanese word</p>
+      <p class="english-text" style="font-size:1.25rem;">${escHtml(ex.english)}</p>
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="production-input" placeholder="kana or romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja" />
+      <button id="production-check">Check</button>
+    </div>
+    <p class="production-hint">Type in kana or romaji</p>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function renderParticleRecall(ex) {
+  const phase = getCurrentPhase();
+  const sentenceHtml = escHtml(ex.question).replace(/_{2,}|（\s*）|\(\s*\)/g, '<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">Type the missing particle</p>
+      <p class="sentence-with-blank">${sentenceHtml}</p>
+      ${romajiHtml(ex.romaji, phase)}
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="production-input" placeholder="particle..." autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja" style="max-width:6rem; text-align:center;" />
+      <button id="production-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function renderReadingRecall(ex) {
+  const phase = getCurrentPhase();
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">What does this mean?</p>
+      <div class="passage-text">${escHtml(ex.japanese)}</div>
+      ${romajiHtml(ex.romaji, phase)}
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="production-input" placeholder="Type the English meaning..." autocomplete="off" spellcheck="false" />
+      <button id="production-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupProductionExercise(ex) {
+  const input = exerciseCard.querySelector('#production-input');
+  const checkBtn = exerciseCard.querySelector('#production-check');
+  if (!input || !checkBtn) return;
+
+  const startTime = Date.now();
+  setTimeout(() => input.focus(), 300);
+
+  function checkAnswer() {
+    if (answered) return;
+    const userAnswer = input.value.trim();
+    if (!userAnswer) return;
+
+    let isCorrect = false;
+    const responseTime = Date.now() - startTime;
+
+    if (ex.type === 'vocab_recall') {
+      isCorrect = matchesAnswer(userAnswer, ex.correct_kana, ex.correct_romaji);
+    } else if (ex.type === 'particle_recall') {
+      // Accept kana or romaji for particles
+      isCorrect = matchesAnswer(userAnswer, ex.correct_answer, null) ||
+                  normalizeRomaji(userAnswer.toLowerCase()) === normalizeRomaji(ex.correct_answer);
+    } else if (ex.type === 'reading_recall') {
+      // Fuzzy English match: lowercase, trim, ignore punctuation
+      const normUser = userAnswer.toLowerCase().replace(/[^\w\s]/g, '').trim();
+      const normCorrect = ex.correct_answer.toLowerCase().replace(/[^\w\s]/g, '').trim();
+      // Exact match or close enough (contains the key words)
+      isCorrect = normUser === normCorrect;
+      if (!isCorrect) {
+        // Check if all significant words are present
+        const correctWords = normCorrect.split(/\s+/).filter(w => w.length > 2);
+        const userWords = normUser.split(/\s+/);
+        const matchCount = correctWords.filter(w => userWords.some(uw => uw.includes(w) || w.includes(uw))).length;
+        isCorrect = correctWords.length > 0 && matchCount >= correctWords.length * 0.7;
+      }
+    }
+
+    answered = true;
+    input.disabled = true;
+    checkBtn.disabled = true;
+    input.classList.add(isCorrect ? 'input-correct' : 'input-incorrect');
+
+    // FSRS rating
+    const rating = exerciseToRating(isCorrect, responseTime);
+    const fsrsKey = ex._vocabIndex
+      ? `vocab_${ex._vocabIndex}`
+      : ex._grammarIndex
+        ? `grammar_${ex._grammarIndex}`
+        : null;
+    if (fsrsKey) {
+      updateFSRSCard(fsrsKey, rating);
+    }
+
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect, ex._vocabIndex, ex._grammarIndex);
+
+    if (!isCorrect) {
+      reinforceQueue.push(ex);
+    }
+
+    // Show correct answer for production exercises
+    let revealHtml = '';
+    if (!isCorrect) {
+      if (ex.type === 'vocab_recall') {
+        revealHtml = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text">${escHtml(ex.correct_display)}</p>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.correct_kana)} (${escHtml(ex.correct_romaji)})</p>
+        </div>`;
+      } else if (ex.type === 'particle_recall') {
+        revealHtml = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text">${escHtml(ex.correct_answer)}</p>
+        </div>`;
+      } else if (ex.type === 'reading_recall') {
+        revealHtml = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text" style="font-family:var(--font-en); font-size:1.1rem;">${escHtml(ex.correct_answer)}</p>
+        </div>`;
+      }
+    }
+
+    const slot = exerciseCard.querySelector('#explanation-slot');
+    if (slot) {
+      slot.innerHTML = revealHtml;
+    }
+
+    showExplanation(isCorrect, ex.explanation, null, ex);
+    showNextButton(isCorrect);
+  }
+
+  checkBtn.addEventListener('click', checkAnswer);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkAnswer();
+  });
+}
+
 // ── Shared Option Handler ───────────────────────────
 window.__selectOption = function(btn) {
   if (answered) return;
@@ -3874,6 +4372,9 @@ function finishSession() {
     reading: 'Reading',
     listening: 'Listening',
     pronunciation: 'Pronunciation',
+    vocab_recall: 'Recall',
+    particle_recall: 'Particle Recall',
+    reading_recall: 'Translation',
     hiragana_read: 'Read It',
     hiragana_spot: 'Spot It',
     hiragana_reverse: 'Read & Choose',
@@ -3981,6 +4482,11 @@ function escAttr(str) {
 renderStartScreen();
 renderLessonSelector();
 showView('view-start');
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 
 </script>
 
