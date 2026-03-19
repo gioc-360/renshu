@@ -1743,13 +1743,12 @@
       color: var(--color-text-muted);
     }
 
-    .ai-loading { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0.5rem 0; }
-    .ai-loading span { display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--color-text-muted); opacity: 0.4; animation: ai-dot 1.2s ease-in-out infinite; }
-    .ai-loading span:nth-child(2) { animation-delay: 0.2s; }
-    .ai-loading span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes ai-dot {
-      0%, 100% { opacity: 0.2; transform: translateY(0); }
-      50% { opacity: 0.6; transform: translateY(-4px); }
+    .ai-loading { position: relative; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .ai-loading svg { position: absolute; width: 200%; left: 0; height: 60px; }
+    .ai-wave { animation: ai-wave-scroll 4s linear infinite; }
+    @keyframes ai-wave-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
     }
 
     .scene-nudge {
@@ -5583,7 +5582,7 @@ async function submitSceneResponse(userInput) {
   if (!isEmpty) {
     input.classList.add('input-evaluating');
     // Show wave animation while AI evaluates
-    feedback.innerHTML = '<div class="ai-loading"><span></span><span></span><span></span></div>';
+    feedback.innerHTML = '<div class="ai-loading"><svg height="60" viewBox="0 0 1200 60" fill="none" preserveAspectRatio="none"><path class="ai-wave" d="M0 30 Q75 15 150 30 T300 30 T450 30 T600 30 T750 30 T900 30 T1050 30 T1200 30" stroke="rgba(200,196,188,0.4)" stroke-width="0.75" fill="none"/></svg></div>';
     feedback.classList.remove('hidden');
     aiResult = await evaluateWithAI(ex, scenario, userInput, normalized);
     input.classList.remove('input-evaluating');
