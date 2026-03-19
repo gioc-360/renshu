@@ -63,7 +63,7 @@ Accept-list: ${JSON.stringify(accepts)}`;
   return msg;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS preflight
   if (req.method === 'OPTIONS') {
     Object.entries(corsHeaders()).forEach(([k, v]) => res.setHeader(k, v));
