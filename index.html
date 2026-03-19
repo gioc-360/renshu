@@ -2156,11 +2156,14 @@ function generateExercises(content, count = 13) {
 
   // ── PHASE 1: New items (recognition exercises — easier first exposure) ──
   const unseenVocab = lessonVocab.filter(v => !history.seenVocab.includes(v._globalKey));
-  const newVocabCount = Math.min(3 + Math.floor(Math.random() * 3), unseenVocab.length);
+  const seenCount = (history.seenVocab || []).length;
+  // More new items early (5-7), tapering to (3-5) as pool grows
+  const newBase = seenCount < 20 ? 5 : 3;
+  const newVocabCount = Math.min(newBase + Math.floor(Math.random() * 3), unseenVocab.length);
   const newVocabKeys = unseenVocab.slice(0, newVocabCount).map(v => v._globalKey);
 
   const unseenGrammar = lessonGrammarFills.filter(g => !history.seenGrammar.includes(g._globalKey));
-  const newGrammarCount = Math.min(1 + Math.floor(Math.random() * 2), unseenGrammar.length);
+  const newGrammarCount = Math.min(2 + Math.floor(Math.random() * 2), unseenGrammar.length);
   const newGrammarKeys = unseenGrammar.slice(0, newGrammarCount).map(g => g._globalKey);
 
   // Mark new items as seen
@@ -2182,8 +2185,8 @@ function generateExercises(content, count = 13) {
     exercises.push(makeGrammarFill(lessonGrammarFills, key, lessonGrammarFills));
   }
 
-  // ── PHASE 2: FSRS-driven review (production exercises — construct from memory) ──
-  // Find all due vocab items across unlocked lessons
+  // ── PHASE 2: FSRS-driven review + production exercises ──
+  // Find due vocab items across unlocked lessons
   const dueVocabKeys = [];
   for (const v of allVocab) {
     const fsrsKey = `vocab_${v._globalKey}`;
@@ -2192,7 +2195,6 @@ function generateExercises(content, count = 13) {
       dueVocabKeys.push({ key: v._globalKey, fsrsKey, overdue: Date.now() - new Date(card.due).getTime() });
     }
   }
-  // Sort by most overdue first
   dueVocabKeys.sort((a, b) => b.overdue - a.overdue);
 
   const dueGrammarKeys = [];
@@ -2205,7 +2207,14 @@ function generateExercises(content, count = 13) {
   }
   dueGrammarKeys.sort((a, b) => b.overdue - a.overdue);
 
-  // Fill with production exercises for due items
+  // Build pool of seen vocab for production (even if not FSRS-due yet)
+  const seenVocab = allVocab.filter(v => history.seenVocab.includes(v._globalKey) && !newVocabKeys.includes(v._globalKey));
+  const seenGrammar = allGrammarFills.filter(g => history.seenGrammar.includes(g._globalKey) && !newGrammarKeys.includes(g._globalKey));
+  const usedVocabKeys = new Set();
+  const usedGrammarKeys = new Set();
+  const usedSentences = new Set();
+
+  // Fill remaining slots with a mix of exercise types
   const productionSlots = count - exercises.length;
   let vocabReviewIdx = 0;
   let grammarReviewIdx = 0;
@@ -2213,37 +2222,59 @@ function generateExercises(content, count = 13) {
   for (let i = 0; i < productionSlots; i++) {
     const rand = Math.random();
 
-    if (rand < 0.30 && vocabReviewIdx < dueVocabKeys.length) {
+    if (rand < 0.25 && (vocabReviewIdx < dueVocabKeys.length || seenVocab.length > 0)) {
       // Vocab recall (production) — type the Japanese word
-      const { key } = dueVocabKeys[vocabReviewIdx++];
+      let key;
+      if (vocabReviewIdx < dueVocabKeys.length) {
+        key = dueVocabKeys[vocabReviewIdx++].key;
+      } else {
+        // Pick a random seen vocab not yet used this session
+        const available = seenVocab.filter(v => !usedVocabKeys.has(v._globalKey));
+        if (available.length === 0) { continue; }
+        const pick = available[Math.floor(Math.random() * available.length)];
+        key = pick._globalKey;
+      }
+      if (usedVocabKeys.has(key)) continue;
+      usedVocabKeys.add(key);
       exercises.push(makeVocabRecall(allVocab, key, lessonVocab));
-    } else if (rand < 0.45 && grammarReviewIdx < dueGrammarKeys.length) {
+    } else if (rand < 0.40 && (grammarReviewIdx < dueGrammarKeys.length || seenGrammar.length > 0)) {
       // Particle recall (production) — type the particle
-      const { key } = dueGrammarKeys[grammarReviewIdx++];
+      let key;
+      if (grammarReviewIdx < dueGrammarKeys.length) {
+        key = dueGrammarKeys[grammarReviewIdx++].key;
+      } else {
+        const available = seenGrammar.filter(g => !usedGrammarKeys.has(g._globalKey));
+        if (available.length === 0) continue;
+        const pick = available[Math.floor(Math.random() * available.length)];
+        key = pick._globalKey;
+      }
+      if (usedGrammarKeys.has(key)) continue;
+      usedGrammarKeys.add(key);
       exercises.push(makeParticleRecall(allGrammarFills, key, lessonGrammarFills));
     } else if (rand < 0.55 && allSentences.length > 0) {
       // Reading recall (production) — type English meaning
-      const rr = makeReadingRecall(allSentences, lessonSentences);
-      if (rr) exercises.push(rr);
-    } else if (rand < 0.65 && vocabReviewIdx < dueVocabKeys.length) {
-      // Listening (recognition but with audio)
-      const { key } = dueVocabKeys[vocabReviewIdx++];
-      exercises.push(makeListening(allVocab, key, lessonVocab));
-    } else if (rand < 0.75 && allVocab.length > 0) {
-      // Pronunciation (production — speak aloud)
+      const available = allSentences.filter((s, idx) => !usedSentences.has(idx));
+      if (available.length === 0) continue;
+      const rr = makeReadingRecall(available, lessonSentences);
+      if (rr) {
+        const idx = allSentences.findIndex(s => s.japanese === rr.japanese);
+        if (idx >= 0) usedSentences.add(idx);
+        exercises.push(rr);
+      }
+    } else if (rand < 0.65 && allVocab.length > 0) {
+      // Listening (recognition with audio)
       const vocabKey = vocabReviewIdx < dueVocabKeys.length
         ? dueVocabKeys[vocabReviewIdx++].key : null;
-      exercises.push(makePronunciation(allVocab, allSentences, vocabKey));
+      exercises.push(makeListening(allVocab, vocabKey, lessonVocab));
+    } else if (rand < 0.75 && allVocab.length > 0) {
+      // Pronunciation (production — speak aloud)
+      exercises.push(makePronunciation(allVocab, allSentences, null));
     } else if (rand < 0.85 && lessonSentenceBuilds.length > 0) {
       // Sentence build (production — arrange words)
       const sb = makeSentenceBuild(allSentenceBuilds, lessonSentenceBuilds);
       if (sb) exercises.push(sb);
-    } else if (vocabReviewIdx < dueVocabKeys.length) {
-      // Fallback: vocab recall
-      const { key } = dueVocabKeys[vocabReviewIdx++];
-      exercises.push(makeVocabRecall(allVocab, key, lessonVocab));
     } else if (allVocab.length >= 4) {
-      // Fallback: vocab quiz if no due items left
+      // Vocab quiz (recognition) — but avoid repeats
       exercises.push(makeVocabQuiz(allVocab, null, lessonVocab));
     } else {
       break;
