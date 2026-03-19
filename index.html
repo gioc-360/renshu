@@ -3475,7 +3475,6 @@ function renderExercise() {
   const transitionDelay = correctStreak >= 5 ? 120 : correctStreak >= 3 ? 150 : 200;
 
   // Final stretch indicator
-  const total = exercises.length;
   if (currentIndex >= total - 2 && total > 3) {
     progressFill.classList.add('final-stretch');
   }
