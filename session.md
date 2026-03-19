@@ -39,7 +39,8 @@ Surface: Kenya Hara design system, envisioning-information
 - TC2 (v1): Confirmed — production trainer with FSRS
 - v1 delivered: FSRS engine, 5 exercise types, hiragana/katakana modes, interaction design, knowledge display
 - TC1 (v2): Confirmed — pain is the gap between isolated recall and situated production. "Fail loud" philosophy.
-- TC2 (v2): pending
+- TC2 (v2): Confirmed — one scenario, offline-first, AI as enhancement, text production, casual register, card UI not chat
+- Increments 1-3 (v2): delivered — scenario content, UI restructure, scene engine (offline)
 
 ## Increment Plan (v2 — Action Mode)
 1. **Friend scenario content** — casual register phrases, accept-lists per exchange, FSRS items
