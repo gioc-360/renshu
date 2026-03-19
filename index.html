@@ -270,21 +270,80 @@
 
     /* ── Exercise card transition ─────────────────────── */
     .exercise-card {
-      transition: opacity 0.4s ease-out;
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
     }
 
     .exercise-card.slide-out {
       opacity: 0;
-      transform: none;
+      transform: translateX(-8px);
     }
 
     .exercise-card.slide-in {
-      animation: slideIn 0.4s ease-out forwards;
+      animation: slideIn 0.35s ease-out forwards;
+    }
+
+    .exercise-card.slide-in-fast {
+      animation: slideIn 0.25s ease-out forwards;
     }
 
     @keyframes slideIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+      from { opacity: 0; transform: translateX(8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Production answer quality feedback ────────────── */
+    .production-input-group input.input-correct-fast {
+      border-bottom-color: var(--color-text);
+      animation: microCelebrate 0.15s ease-out;
+    }
+
+    @keyframes microCelebrate {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    .production-input-group input.input-incorrect {
+      border-bottom-color: var(--color-vermillion);
+    }
+
+    .production-input-group input.input-incorrect-fade {
+      opacity: 0.4;
+    }
+
+    .correct-answer-reveal {
+      animation: revealAnswer 0.3s ease-out forwards;
+    }
+
+    @keyframes revealAnswer {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Progress bar final stretch ────────────────────── */
+    .progress-fill.final-stretch {
+      background: var(--color-vermillion);
+    }
+
+    .progress-fill.pulse {
+      animation: barPulse 0.3s ease-out;
+    }
+
+    @keyframes barPulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    /* ── Session complete staggered reveal ─────────────── */
+    .score-count-up {
+      display: inline-block;
+      font-family: var(--font-jp);
+    }
+
+    .breakdown-item {
+      opacity: 0;
+      animation: fadeIn 0.3s ease-out forwards;
     }
 
     /* ══════════════════════════════════════════════════
@@ -3060,6 +3119,8 @@ async function startSession() {
   sessionResults = [];
   answered = false;
   reinforceQueue = [];
+  correctStreak = 0;
+  progressFill.classList.remove('final-stretch');
 
   const log = document.getElementById('session-review-log');
   if (log) log.innerHTML = '';
@@ -3360,15 +3421,22 @@ function renderExercise() {
 
   const ex = exercises[currentIndex];
 
-  // Slide transition
-  exerciseCard.classList.remove('slide-in');
+  // Directional slide transition — speeds up on streaks
+  exerciseCard.classList.remove('slide-in', 'slide-in-fast');
   exerciseCard.classList.add('slide-out');
+  const transitionDelay = correctStreak >= 5 ? 120 : correctStreak >= 3 ? 150 : 200;
+
+  // Final stretch indicator
+  const total = exercises.length;
+  if (currentIndex >= total - 2 && total > 3) {
+    progressFill.classList.add('final-stretch');
+  }
 
   setTimeout(() => {
     exerciseCard.classList.remove('slide-out');
     renderExerciseContent(ex);
-    exerciseCard.classList.add('slide-in');
-  }, 200);
+    exerciseCard.classList.add(correctStreak >= 3 ? 'slide-in-fast' : 'slide-in');
+  }, transitionDelay);
 }
 
 function renderExerciseContent(ex) {
@@ -4366,7 +4434,16 @@ function setupProductionExercise(ex) {
     answered = true;
     input.disabled = true;
     checkBtn.disabled = true;
-    input.classList.add(isCorrect ? 'input-correct' : 'input-incorrect');
+
+    // Quality-differentiated feedback
+    const isFast = isCorrect && responseTime < 2000;
+    if (isCorrect) {
+      input.classList.add(isFast ? 'input-correct-fast' : 'input-correct');
+    } else {
+      input.classList.add('input-incorrect');
+      // Fade the wrong answer — you see what you typed, but dimmed
+      setTimeout(() => input.classList.add('input-incorrect-fade'), 150);
+    }
 
     // FSRS rating
     const rating = exerciseToRating(isCorrect, responseTime);
@@ -4414,7 +4491,7 @@ function setupProductionExercise(ex) {
     }
 
     showExplanation(isCorrect, ex.explanation, null, ex);
-    showNextButton(isCorrect);
+    showNextButton(isCorrect, isFast);
   }
 
   checkBtn.addEventListener('click', checkAnswer);
@@ -4434,18 +4511,27 @@ window.__selectOption = function(btn) {
   const isCorrect = userAnswer === correctAnswer;
   const ex = exercises[currentIndex];
 
-  // Highlight selected button briefly
+  // Highlight selected button
   btn.classList.add(isCorrect ? 'correct' : 'incorrect');
 
-  // Disable all option buttons and reveal correct
-  if (optionsGrid) optionsGrid.classList.add('answered');
+  // Disable all option buttons
   const allBtns = exerciseCard.querySelectorAll('.btn-option');
-  allBtns.forEach(b => {
-    b.disabled = true;
-    if (b.dataset.answer === correctAnswer && !isCorrect) {
-      b.classList.add('reveal-correct');
-    }
-  });
+  allBtns.forEach(b => { b.disabled = true; });
+
+  if (isCorrect) {
+    // Correct: fade others immediately
+    if (optionsGrid) optionsGrid.classList.add('answered');
+  } else {
+    // Wrong: 200ms pause before revealing correct — let the error register first
+    if (optionsGrid) optionsGrid.classList.add('answered');
+    setTimeout(() => {
+      allBtns.forEach(b => {
+        if (b.dataset.answer === correctAnswer) {
+          b.classList.add('reveal-correct');
+        }
+      });
+    }, 200);
+  }
 
   // Record result
   sessionResults.push({ type: ex.type, correct: isCorrect });
@@ -4506,22 +4592,36 @@ function showExplanation(isCorrect, explanation, correctAnswer, exercise) {
   }
 }
 
-function showNextButton(autoAdvance) {
+let correctStreak = 0;
+
+function showNextButton(autoAdvance, wasFast) {
   if (autoAdvance) {
-    // Correct answer: auto-advance
+    correctStreak++;
+    // Faster auto-advance when on a streak or answered fast
+    const baseDelay = wasFast ? 700 : 1200;
+    const streakReduction = correctStreak >= 5 ? 300 : correctStreak >= 3 ? 150 : 0;
+    const delay = Math.max(500, baseDelay - streakReduction);
+
+    // Pulse progress bar on fast correct
+    if (wasFast) {
+      progressFill.classList.add('pulse');
+      setTimeout(() => progressFill.classList.remove('pulse'), 300);
+    }
+
     btnAction.disabled = true;
     setTimeout(() => {
       if (answered) goToNextExercise();
-    }, 1000);
+    }, delay);
   } else {
-    // Wrong answer: require click
+    correctStreak = 0;
+    // Wrong answer: mandatory absorption time before Next is available
     btnAction.disabled = true;
     setTimeout(() => {
       btnAction.textContent = 'Next';
       btnAction.classList.remove('btn-skip-state');
       btnAction.classList.add('btn-next-state');
       btnAction.disabled = false;
-    }, 400);
+    }, 1500);
   }
 }
 
@@ -4586,19 +4686,42 @@ function finishSession() {
   const correct = sessionResults.filter(r => r.correct).length;
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-  $('#score-num').textContent = correct;
-  $('#score-denom').textContent = `/ ${total}`;
-  $('#score-percent').textContent = `${pct}% correct`;
+  // Animated count-up for score
+  const scoreEl = $('#score-num');
+  const denomEl = $('#score-denom');
+  const pctEl = $('#score-percent');
+  denomEl.textContent = `/ ${total}`;
+  scoreEl.textContent = '0';
+  pctEl.textContent = '';
 
-  // Message
+  // Count up from 0 to correct over 600ms
+  const countDuration = 600;
+  const countStart = performance.now();
+  function countUp(now) {
+    const elapsed = now - countStart;
+    const progress = Math.min(elapsed / countDuration, 1);
+    const current = Math.round(progress * correct);
+    scoreEl.textContent = current;
+    if (progress < 1) {
+      requestAnimationFrame(countUp);
+    } else {
+      scoreEl.textContent = correct;
+      // Show percentage after count settles
+      setTimeout(() => { pctEl.textContent = `${pct}%`; }, 200);
+    }
+  }
+  requestAnimationFrame(countUp);
+
+  // Message — honest, not patronizing
+  const msgEl = $('#complete-message');
   if (pct >= 90) {
-    $('#complete-message').textContent = 'Outstanding!';
+    msgEl.textContent = '';
   } else if (pct >= 70) {
-    $('#complete-message').textContent = 'Great effort!';
+    msgEl.textContent = 'Good session.';
   } else if (pct >= 50) {
-    $('#complete-message').textContent = 'Keep practicing!';
+    msgEl.textContent = 'Keep going.';
   } else {
-    $('#complete-message').textContent = 'Every attempt counts!';
+    msgEl.textContent = '';
   }
 
   // Breakdown by type
@@ -4641,14 +4764,21 @@ function finishSession() {
 
     const li = document.createElement('li');
     li.className = 'breakdown-item';
+    const idx = breakdownList.children.length;
+    li.style.animationDelay = `${400 + idx * 100}ms`;
     li.innerHTML = `
       <span class="breakdown-type">${typeLabels[type] || type}</span>
       <div class="breakdown-bar">
-        <div class="breakdown-bar-fill ${barClass}" style="width:${ratePct}%"></div>
+        <div class="breakdown-bar-fill ${barClass}" style="width:0%"></div>
       </div>
       <span class="breakdown-score">${data.correct}/${data.total}</span>
     `;
     breakdownList.appendChild(li);
+    // Animate bar width after stagger delay
+    setTimeout(() => {
+      const bar = li.querySelector('.breakdown-bar-fill');
+      if (bar) bar.style.width = `${ratePct}%`;
+    }, 500 + idx * 100);
   }
 
   // Update progress bar to 100%
