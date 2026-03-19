@@ -485,6 +485,26 @@
       opacity: 0.7;
     }
 
+    .scenario-card {
+      margin-top: 0.5rem;
+    }
+
+    .scenario-title {
+      font-family: var(--font-jp);
+      font-size: 1.4rem;
+      color: var(--color-text);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.25rem;
+    }
+
+    .scenario-setting {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.01em;
+      max-width: 240px;
+      line-height: 1.5;
+    }
+
     .lesson-pulse {
       margin-top: 1.5rem;
       font-family: var(--font-jp);
@@ -1634,6 +1654,141 @@
       color: var(--color-text);
     }
 
+    /* ── Scene (Action mode) ─────────────────────────── */
+    .scene-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    #scene-setting-header {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      letter-spacing: 0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .scene-progress {
+      font-size: 0.65rem;
+      color: var(--color-text-muted);
+    }
+
+    .scene-exchange {
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .scene-speaker {
+      font-size: 0.65rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .scene-line {
+      font-family: var(--font-jp);
+      font-size: 1.5rem;
+      color: var(--color-text);
+      line-height: 1.6;
+      margin-bottom: 0.25rem;
+    }
+
+    .scene-line-reading {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .scene-prompt {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.75rem;
+      font-style: italic;
+    }
+
+    .scene-feedback {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--color-text-secondary);
+    }
+
+    .scene-feedback .fb-yours {
+      color: var(--color-text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .scene-feedback .fb-best {
+      font-family: var(--font-jp);
+      font-size: 1.1rem;
+      color: var(--color-text);
+      margin-bottom: 0.25rem;
+    }
+
+    .scene-feedback .fb-note {
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+    }
+
+    .scene-nudge {
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+
+    .scene-footer {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    /* ── Scene results ───────────────────────────────── */
+    .scene-results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+
+    .scene-result-item {
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 1rem;
+    }
+
+    .scene-result-item .sr-speaker {
+      font-size: 0.6rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .scene-result-item .sr-line {
+      font-family: var(--font-jp);
+      font-size: 1rem;
+      color: var(--color-text);
+      margin: 0.25rem 0;
+    }
+
+    .scene-result-item .sr-yours {
+      font-family: var(--font-jp);
+      font-size: 0.9rem;
+      margin: 0.25rem 0;
+    }
+
+    .scene-result-item .sr-yours.correct {
+      color: var(--color-text);
+    }
+
+    .scene-result-item .sr-yours.missed {
+      color: var(--color-vermillion);
+    }
+
+    .scene-result-item .sr-best {
+      font-family: var(--font-jp);
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
     /* ── Utility ──────────────────────────────────────── */
     .hidden {
       display: none !important;
@@ -1670,11 +1825,16 @@
     <div class="start-center" id="start-center">
       <h1 class="app-title jp">ここすき</h1>
       <div class="start-selector" id="start-selector">
-        <select id="lesson-select" class="start-select"></select>
+        <select id="lesson-select" class="start-select hidden"></select>
         <select id="group-select" class="start-select hidden"></select>
+        <div class="scenario-card hidden" id="scenario-card">
+          <div class="scenario-title" id="scenario-title"></div>
+          <div class="scenario-setting" id="scenario-setting"></div>
+        </div>
       </div>
       <div class="start-actions" id="start-actions">
         <button class="btn-primary" id="btn-start-session">begin</button>
+        <button class="btn-primary hidden" id="btn-enter-scene">enter scene</button>
       </div>
       <div class="lesson-pulse" id="lesson-pulse"></div>
     </div>
@@ -1683,7 +1843,7 @@
     <div class="mode-selector" id="mode-selector">
       <button id="btn-mode-learn" onclick="window.__setMode('learn')">Hiragana</button>
       <button id="btn-mode-learn-katakana" onclick="window.__setMode('learn-katakana')">Katakana</button>
-      <button id="btn-mode-practice" class="active" onclick="window.__setMode('practice')">Practice</button>
+      <button id="btn-mode-action" class="active" onclick="window.__setMode('action')">Action</button>
     </div>
 
     <!-- Profile creation (shown only when no profile exists) -->
@@ -1771,6 +1931,48 @@
     <div class="complete-actions">
       <button class="btn-primary" id="btn-practice-again">Practice Again</button>
       <button class="btn-secondary" id="btn-back-home">Back to Home</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VIEW: SCENE (Action mode)
+       ══════════════════════════════════════════════════ -->
+  <div id="view-scene" class="view">
+    <div class="scene-header">
+      <div class="scene-setting" id="scene-setting-header"></div>
+      <div class="scene-progress" id="scene-progress"></div>
+    </div>
+
+    <div class="scene-exchange" id="scene-exchange">
+      <div class="scene-speaker" id="scene-speaker"></div>
+      <div class="scene-line" id="scene-line"></div>
+      <div class="scene-line-reading" id="scene-line-reading"></div>
+      <div class="scene-prompt" id="scene-prompt"></div>
+      <div class="production-input-group" id="scene-input-group">
+        <input type="text" id="scene-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="">
+        <button id="scene-submit">→</button>
+      </div>
+      <div class="scene-feedback hidden" id="scene-feedback"></div>
+      <div class="scene-nudge hidden" id="scene-nudge"></div>
+    </div>
+
+    <div class="scene-footer">
+      <button class="btn-primary hidden" id="scene-next">next</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VIEW: SCENE RESULTS
+       ══════════════════════════════════════════════════ -->
+  <div id="view-scene-results" class="view">
+    <div class="complete-header">
+      <h2>Scene Complete</h2>
+      <p class="subtitle" id="scene-results-message"></p>
+    </div>
+    <div class="scene-results-list" id="scene-results-list"></div>
+    <div class="complete-actions">
+      <button class="btn-primary" id="btn-scene-retry">try again</button>
+      <button class="btn-secondary" id="btn-scene-home">back to home</button>
     </div>
   </div>
 
@@ -2521,7 +2723,7 @@ let exercises = [];       // array of exercises for the current session
 let answered = false;     // whether the current exercise has been answered
 let sessionResults = [];  // array of { type, correct } for each answered exercise
 let reinforceQueue = [];  // wrong items to reinforce later in session
-let currentMode = 'practice'; // 'practice', 'learn', or 'learn-katakana'
+let currentMode = 'action'; // 'action', 'learn', or 'learn-katakana'
 
 // TTS
 let voices = [];
@@ -2538,9 +2740,11 @@ let isRecording = false;
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-const viewStart    = $('#view-start');
-const viewSession  = $('#view-session');
-const viewComplete = $('#view-complete');
+const viewStart        = $('#view-start');
+const viewSession      = $('#view-session');
+const viewComplete     = $('#view-complete');
+const viewScene        = $('#view-scene');
+const viewSceneResults = $('#view-scene-results');
 
 const btnStartSession = $('#btn-start-session');
 const btnAction        = $('#btn-action');
@@ -2793,7 +2997,7 @@ function recordExerciseResult(type, correct, vocabKey, grammarKey) {
 // View Management
 // ══════════════════════════════════════════════════════
 function showView(viewId) {
-  const allViews = [viewStart, viewSession, viewComplete];
+  const allViews = [viewStart, viewSession, viewComplete, viewScene, viewSceneResults];
 
   allViews.forEach(v => {
     if (v.classList.contains('active')) {
@@ -3145,8 +3349,32 @@ function renderStartScreen() {
   renderProgressionSection();
   renderLessonSelector();
   renderGroupSelector();
+  renderScenarioCard();
   updateModeUI();
   renderLessonPulse();
+}
+
+function renderScenarioCard() {
+  const titleEl = document.getElementById('scenario-title');
+  const settingEl = document.getElementById('scenario-setting');
+  const btnBegin = document.getElementById('btn-start-session');
+  const btnScene = document.getElementById('btn-enter-scene');
+  if (!titleEl || !settingEl) return;
+
+  const scenario = scenarios[0];
+  if (!scenario) return;
+
+  titleEl.textContent = `${scenario.title} — ${scenario.titleEn}`;
+  settingEl.textContent = scenario.setting;
+
+  // Show both buttons in Action mode: "drill" for prereqs, "enter scene" for the scene
+  if (currentMode === 'action') {
+    btnBegin.textContent = 'drill';
+    btnScene.classList.remove('hidden');
+  } else {
+    btnBegin.textContent = 'begin';
+    btnScene.classList.add('hidden');
+  }
 }
 
 /**
@@ -3182,16 +3410,14 @@ function renderLessonPulse() {
       html += `<span style="opacity:${opacity.toFixed(2)}">${ch.kana}</span>`;
     }
     el.innerHTML = html;
-  } else {
-    // Practice mode — show current lesson's vocab
-    const lessonIdx = history.currentLesson || 0;
-    const lesson = n5Content.lessons[lessonIdx];
-    if (!lesson || !lesson.vocabulary) { el.innerHTML = ''; return; }
+  } else if (currentMode === 'action') {
+    // Action mode — show scenario prereq phrases at retrievability
+    const scenario = scenarios[0]; // First scenario for now
+    if (!scenario) { el.innerHTML = ''; return; }
 
     let html = '';
-    for (let j = 0; j < lesson.vocabulary.length; j++) {
-      const v = lesson.vocabulary[j];
-      const key = `vocab_L${lessonIdx}_${j}`;
+    for (const p of scenario.prereqs) {
+      const key = `scene_${scenario.id}_${p.id}`;
       const card = fsrsState[key];
       let opacity;
       if (!card || card.state === NEW) {
@@ -3200,8 +3426,7 @@ function renderLessonPulse() {
         const r = retrievability(card);
         opacity = 0.2 + 0.8 * r;
       }
-      const label = v.kana || v.japanese || v.english;
-      html += `<span style="opacity:${opacity.toFixed(2)}">${label}</span>`;
+      html += `<span style="opacity:${opacity.toFixed(2)}">${p.japanese}</span>`;
     }
     el.innerHTML = html;
   }
@@ -3218,21 +3443,24 @@ window.__setMode = function(mode) {
 function updateModeUI() {
   const btnLearn = $('#btn-mode-learn');
   const btnLearnKatakana = $('#btn-mode-learn-katakana');
-  const btnPractice = $('#btn-mode-practice');
+  const btnAction = $('#btn-mode-action');
   const lessonSelect = $('#lesson-select');
   const groupSelect = $('#group-select');
+  const scenarioCard = $('#scenario-card');
 
   btnLearn.classList.toggle('active', currentMode === 'learn');
   btnLearnKatakana.classList.toggle('active', currentMode === 'learn-katakana');
-  btnPractice.classList.toggle('active', currentMode === 'practice');
+  btnAction.classList.toggle('active', currentMode === 'action');
 
   // Toggle which selector shows on front page
+  lessonSelect.classList.add('hidden');
+  groupSelect.classList.add('hidden');
+  if (scenarioCard) scenarioCard.classList.add('hidden');
+
   if (currentMode === 'learn' || currentMode === 'learn-katakana') {
-    lessonSelect.classList.add('hidden');
     groupSelect.classList.remove('hidden');
-  } else {
-    lessonSelect.classList.remove('hidden');
-    groupSelect.classList.add('hidden');
+  } else if (currentMode === 'action') {
+    if (scenarioCard) scenarioCard.classList.remove('hidden');
   }
 }
 
@@ -3276,6 +3504,8 @@ async function startSession() {
     const groups = isKatakana ? katakanaGroups : hiraganaGroups;
     const pairs = isKatakana ? katakanaConfusablePairs : confusablePairs;
     exercises = generateLearningSession(groupIdx, groups, pairs);
+  } else if (currentMode === 'action') {
+    exercises = generateScenarioDrill(scenarios[0]);
   } else {
     exercises = generateExercises(n5Content, 13);
   }
@@ -3321,6 +3551,63 @@ function normalizeRomaji(input) {
   s = s.replace(/nb/g, 'mb');
   s = s.replace(/np/g, 'mp');
   return s;
+}
+
+/**
+ * Generate a drill session from a scenario's prerequisite phrases.
+ * FSRS-driven: due items first, then weakest, then new.
+ */
+function generateScenarioDrill(scenario) {
+  const fsrsState = loadFSRSState();
+  const exercises = [];
+  const prereqs = [...scenario.prereqs];
+
+  // Ensure FSRS cards exist for all prereqs
+  for (const p of prereqs) {
+    const key = `scene_${scenario.id}_${p.id}`;
+    if (!fsrsState[key]) {
+      fsrsState[key] = createCard(key, 'scene');
+    }
+  }
+  saveFSRSState(fsrsState);
+
+  // Sort: due items first (most overdue), then by lowest retrievability
+  prereqs.sort((a, b) => {
+    const cardA = fsrsState[`scene_${scenario.id}_${a.id}`];
+    const cardB = fsrsState[`scene_${scenario.id}_${b.id}`];
+    const dueA = cardA.state !== NEW && isDue(cardA);
+    const dueB = cardB.state !== NEW && isDue(cardB);
+    if (dueA && !dueB) return -1;
+    if (!dueA && dueB) return 1;
+    const rA = cardA.state === NEW ? 0 : retrievability(cardA);
+    const rB = cardB.state === NEW ? 0 : retrievability(cardB);
+    return rA - rB;
+  });
+
+  // Take up to 10 items per session
+  const sessionItems = prereqs.slice(0, 10);
+
+  for (const p of sessionItems) {
+    // Recognition: see Japanese → type English
+    exercises.push({
+      type: 'reading_recall',
+      japanese: p.japanese,
+      correct_answer: p.english,
+      explanation: `${p.japanese} = ${p.english}`,
+      _sceneKey: `scene_${scenario.id}_${p.id}`,
+    });
+
+    // Production: see English → type Japanese
+    exercises.push({
+      type: 'vocab_recall',
+      english: p.english,
+      correct_answer: p.japanese,
+      explanation: `${p.english} → ${p.japanese}`,
+      _sceneKey: `scene_${scenario.id}_${p.id}`,
+    });
+  }
+
+  return shuffle(exercises);
 }
 
 function generateLearningSession(groupIdx, groups, confusables) {
@@ -4612,11 +4899,13 @@ function setupProductionExercise(ex) {
 
     // FSRS rating
     const rating = exerciseToRating(isCorrect, responseTime);
-    const fsrsKey = ex._vocabIndex
-      ? `vocab_${ex._vocabIndex}`
-      : ex._grammarIndex
-        ? `grammar_${ex._grammarIndex}`
-        : null;
+    const fsrsKey = ex._sceneKey
+      ? ex._sceneKey
+      : ex._vocabIndex
+        ? `vocab_${ex._vocabIndex}`
+        : ex._grammarIndex
+          ? `grammar_${ex._grammarIndex}`
+          : null;
     if (fsrsKey) {
       updateFSRSCard(fsrsKey, rating);
     }
@@ -5041,6 +5330,249 @@ document.querySelector('.app-title').addEventListener('dblclick', () => {
 });
 
 // ══════════════════════════════════════════════════════
+// Scene Engine (Action mode)
+// ══════════════════════════════════════════════════════
+let sceneState = null; // { scenario, exchangeIdx, results[], nudgeTimer, moveOnTimer }
+
+function startScene(scenario) {
+  sceneState = {
+    scenario,
+    exchangeIdx: 0,
+    results: [],
+    nudgeTimer: null,
+    moveOnTimer: null,
+  };
+
+  // Ensure FSRS cards for all prereqs
+  const fsrsState = loadFSRSState();
+  for (const p of scenario.prereqs) {
+    const key = `scene_${scenario.id}_${p.id}`;
+    if (!fsrsState[key]) {
+      fsrsState[key] = createCard(key, 'scene');
+    }
+  }
+  saveFSRSState(fsrsState);
+
+  document.getElementById('scene-setting-header').textContent = scenario.setting;
+  showView('view-scene');
+  renderSceneExchange();
+}
+
+function renderSceneExchange() {
+  const { scenario, exchangeIdx } = sceneState;
+  const ex = scenario.exchanges[exchangeIdx];
+  if (!ex) { endScene(); return; }
+
+  // Clear previous state
+  clearSceneTimers();
+  const input = document.getElementById('scene-input');
+  const feedback = document.getElementById('scene-feedback');
+  const nudge = document.getElementById('scene-nudge');
+  const nextBtn = document.getElementById('scene-next');
+  const inputGroup = document.getElementById('scene-input-group');
+
+  input.value = '';
+  input.disabled = false;
+  input.classList.remove('input-correct', 'input-correct-fast', 'input-incorrect');
+  feedback.classList.add('hidden');
+  feedback.innerHTML = '';
+  nudge.classList.add('hidden');
+  nextBtn.classList.add('hidden');
+  inputGroup.classList.remove('hidden');
+
+  // Populate
+  document.getElementById('scene-speaker').textContent = ex.speaker === 'friend' ? 'Yuki' : '';
+  document.getElementById('scene-line').textContent = ex.line;
+  document.getElementById('scene-line-reading').textContent = ex.lineReading;
+  document.getElementById('scene-prompt').textContent = ex.prompt;
+  document.getElementById('scene-progress').textContent = `${exchangeIdx + 1} / ${scenario.exchanges.length}`;
+
+  // Focus input
+  setTimeout(() => input.focus(), 100);
+
+  // Start nudge timer
+  sceneState.nudgeTimer = setTimeout(() => {
+    nudge.textContent = ex.nudge;
+    nudge.classList.remove('hidden');
+  }, 20000);
+
+  // Start moveOn timer
+  sceneState.moveOnTimer = setTimeout(() => {
+    if (!input.disabled) {
+      submitSceneResponse('');
+    }
+  }, 35000);
+}
+
+function clearSceneTimers() {
+  if (sceneState.nudgeTimer) { clearTimeout(sceneState.nudgeTimer); sceneState.nudgeTimer = null; }
+  if (sceneState.moveOnTimer) { clearTimeout(sceneState.moveOnTimer); sceneState.moveOnTimer = null; }
+}
+
+function normalizeJapanese(str) {
+  return str.replace(/[\s！？!?、。,.\u3000]/g, '').toLowerCase();
+}
+
+function submitSceneResponse(userInput) {
+  clearSceneTimers();
+  const { scenario, exchangeIdx } = sceneState;
+  const ex = scenario.exchanges[exchangeIdx];
+  const input = document.getElementById('scene-input');
+  const feedback = document.getElementById('scene-feedback');
+  const nextBtn = document.getElementById('scene-next');
+
+  input.disabled = true;
+
+  const normalized = normalizeJapanese(romajiToKana(userInput));
+  const isMatch = ex.accepts.some(a => normalizeJapanese(a) === normalized);
+  const isEmpty = normalized.length === 0;
+
+  // Check for "close" matches (wrong register, etc.)
+  let closeMsg = null;
+  if (!isMatch && !isEmpty && ex.feedback.close) {
+    for (const c of ex.feedback.close) {
+      if (normalized.includes(normalizeJapanese(c.pattern))) {
+        closeMsg = c.msg;
+        break;
+      }
+    }
+  }
+
+  // Visual feedback on input
+  if (isEmpty) {
+    // Timed out — no input styling
+  } else if (isMatch) {
+    input.classList.add('input-correct');
+  } else {
+    input.classList.add('input-incorrect');
+  }
+
+  // Build feedback HTML
+  let fbHtml = '';
+  if (isEmpty) {
+    fbHtml += `<div class="fb-yours">You didn't respond.</div>`;
+    fbHtml += `<div class="fb-best">${ex.best}</div>`;
+    fbHtml += `<div class="fb-note">${ex.feedback.miss}</div>`;
+  } else if (isMatch) {
+    fbHtml += `<div class="fb-note">${ex.feedback.correct}</div>`;
+  } else if (closeMsg) {
+    fbHtml += `<div class="fb-yours">You said: ${userInput}</div>`;
+    fbHtml += `<div class="fb-best">${ex.best}</div>`;
+    fbHtml += `<div class="fb-note">${closeMsg}</div>`;
+  } else {
+    fbHtml += `<div class="fb-yours">You said: ${userInput}</div>`;
+    fbHtml += `<div class="fb-best">${ex.best}</div>`;
+    fbHtml += `<div class="fb-note">${ex.feedback.miss}</div>`;
+  }
+
+  feedback.innerHTML = fbHtml;
+  feedback.classList.remove('hidden');
+
+  // FSRS: find the closest prereq and rate it
+  const rating = isEmpty ? AGAIN : isMatch ? (closeMsg ? HARD : GOOD) : AGAIN;
+  // Map exchange to a prereq by matching type
+  const matchedPrereq = scenario.prereqs.find(p => {
+    return ex.accepts.some(a => normalizeJapanese(a).includes(normalizeJapanese(p.japanese)));
+  });
+  if (matchedPrereq) {
+    const fsrsKey = `scene_${scenario.id}_${matchedPrereq.id}`;
+    ensureHiraFSRSCard(fsrsKey); // reuse the ensure function
+    updateFSRSCard(fsrsKey, rating);
+  }
+
+  // Record result
+  sceneState.results.push({
+    exchangeIdx,
+    userInput: userInput || '(no response)',
+    isMatch,
+    isEmpty,
+    closeMsg,
+    best: ex.best,
+    line: ex.line,
+    lineEn: ex.lineEn,
+    rating,
+  });
+
+  // Show next button (or auto-advance if correct)
+  if (isMatch) {
+    setTimeout(() => {
+      sceneState.exchangeIdx++;
+      renderSceneExchange();
+    }, 1200);
+  } else {
+    nextBtn.classList.remove('hidden');
+  }
+}
+
+function endScene() {
+  clearSceneTimers();
+  const { scenario, results } = sceneState;
+  const correct = results.filter(r => r.isMatch).length;
+  const total = results.length;
+
+  // Message
+  const msgEl = document.getElementById('scene-results-message');
+  if (correct === total) {
+    msgEl.textContent = 'You handled it naturally.';
+  } else if (correct >= total / 2) {
+    msgEl.textContent = 'You got through it. Some rough spots.';
+  } else {
+    msgEl.textContent = "That was hard. Now you know what to drill.";
+  }
+
+  // Build results list
+  const listEl = document.getElementById('scene-results-list');
+  let html = '';
+  for (const r of results) {
+    const cls = r.isMatch ? 'correct' : 'missed';
+    html += `<div class="scene-result-item">`;
+    html += `<div class="sr-speaker">Yuki</div>`;
+    html += `<div class="sr-line">${r.line}</div>`;
+    html += `<div class="sr-yours ${cls}">You: ${r.userInput}</div>`;
+    if (!r.isMatch) {
+      html += `<div class="sr-best">→ ${r.best}</div>`;
+    }
+    html += `</div>`;
+  }
+  listEl.innerHTML = html;
+
+  showView('view-scene-results');
+}
+
+// Scene event listeners
+document.getElementById('btn-enter-scene').addEventListener('click', () => {
+  if (!getActiveProfile()) return;
+  startScene(scenarios[0]);
+});
+
+document.getElementById('scene-submit').addEventListener('click', () => {
+  const input = document.getElementById('scene-input');
+  if (!input.disabled) submitSceneResponse(input.value.trim());
+});
+
+document.getElementById('scene-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const input = document.getElementById('scene-input');
+    if (!input.disabled) submitSceneResponse(input.value.trim());
+  }
+});
+
+document.getElementById('scene-next').addEventListener('click', () => {
+  sceneState.exchangeIdx++;
+  renderSceneExchange();
+});
+
+document.getElementById('btn-scene-retry').addEventListener('click', () => {
+  startScene(scenarios[0]);
+});
+
+document.getElementById('btn-scene-home').addEventListener('click', () => {
+  renderStartScreen();
+  showView('view-start');
+});
+
+// ══════════════════════════════════════════════════════
 // Init
 // ══════════════════════════════════════════════════════
 renderStartScreen();
@@ -5048,7 +5580,7 @@ renderLessonSelector();
 showView('view-start');
 
 // Service Worker — force update on version change
-const APP_VERSION = 9;
+const APP_VERSION = 10;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     // Nuke all old SWs and caches, then re-register
