@@ -2175,14 +2175,21 @@ function generateExercises(content, count = 13) {
   }
   saveSkillHistory(history);
 
-  // New vocab → recognition (multiple choice) for first exposure
+  // New vocab → recognition first, then production recall for the same items
   for (const key of newVocabKeys) {
     exercises.push(makeVocabQuiz(lessonVocab, key, lessonVocab));
   }
+  // Immediately follow up: type what you just learned
+  for (const key of newVocabKeys) {
+    exercises.push(makeVocabRecall(allVocab, key, lessonVocab));
+  }
 
-  // New grammar → recognition (multiple choice) for first exposure
+  // New grammar → recognition first, then production
   for (const key of newGrammarKeys) {
     exercises.push(makeGrammarFill(lessonGrammarFills, key, lessonGrammarFills));
+  }
+  for (const key of newGrammarKeys) {
+    exercises.push(makeParticleRecall(allGrammarFills, key, lessonGrammarFills));
   }
 
   // ── PHASE 2: FSRS-driven review + production exercises ──
@@ -2207,9 +2214,9 @@ function generateExercises(content, count = 13) {
   }
   dueGrammarKeys.sort((a, b) => b.overdue - a.overdue);
 
-  // Build pool of seen vocab for production (even if not FSRS-due yet)
-  const seenVocab = allVocab.filter(v => history.seenVocab.includes(v._globalKey) && !newVocabKeys.includes(v._globalKey));
-  const seenGrammar = allGrammarFills.filter(g => history.seenGrammar.includes(g._globalKey) && !newGrammarKeys.includes(g._globalKey));
+  // Build pool for production — includes just-introduced items (learn then produce in same session)
+  const seenVocab = allVocab.filter(v => history.seenVocab.includes(v._globalKey));
+  const seenGrammar = allGrammarFills.filter(g => history.seenGrammar.includes(g._globalKey));
   const usedVocabKeys = new Set();
   const usedGrammarKeys = new Set();
   const usedSentences = new Set();
