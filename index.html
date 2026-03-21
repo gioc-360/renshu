@@ -3662,33 +3662,52 @@ function generateScenarioDrill(scenario, filterPrereqIds) {
     return rA - rB;
   });
 
-  // Take up to 10 items per session
-  const sessionItems = prereqs.slice(0, 10);
+  // Take up to 8 items per session
+  const sessionItems = prereqs.slice(0, 8);
+
+  // Build exercises: intro cards for NEW items, then recognition, then production
+  const introExercises = [];
+  const drillExercises = [];
 
   for (const p of sessionItems) {
+    const key = `scene_${scenario.id}_${p.id}`;
+    const card = fsrsState[key];
+
+    // NEW items get an intro card first
+    if (card && card.state === NEW) {
+      introExercises.push({
+        type: 'scene_intro',
+        japanese: p.japanese,
+        romaji: p.romaji || null,
+        english: p.english,
+        _sceneKey: key,
+      });
+    }
+
     // Recognition: see Japanese → type English
-    exercises.push({
+    drillExercises.push({
       type: 'reading_recall',
       japanese: p.japanese,
       romaji: p.romaji || null,
       correct_answer: p.english,
       explanation: `${p.japanese}${p.romaji ? ' (' + p.romaji + ')' : ''} = ${p.english}`,
-      _sceneKey: `scene_${scenario.id}_${p.id}`,
+      _sceneKey: key,
     });
 
     // Production: see English → type Japanese
-    exercises.push({
+    drillExercises.push({
       type: 'vocab_recall',
       english: p.english,
       correct_kana: p.japanese,
       correct_romaji: p.romaji || null,
       correct_display: p.japanese,
       explanation: `${p.english} → ${p.japanese}${p.romaji ? ' (' + p.romaji + ')' : ''}`,
-      _sceneKey: `scene_${scenario.id}_${p.id}`,
+      _sceneKey: key,
     });
   }
 
-  return shuffle(exercises);
+  // Intro cards first (in order), then shuffled drills
+  return [...introExercises, ...shuffle(drillExercises)];
 }
 
 function getWordWeakness(word, fsrsState, prefix) {
@@ -4035,6 +4054,7 @@ function renderExerciseContent(ex) {
     hiragana_build: 'Build the Word',
     hiragana_produce: 'Type Kana',
     hiragana_vocab: 'Read Real Words',
+    scene_intro: 'New Phrase',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -4057,6 +4077,9 @@ function renderExerciseContent(ex) {
       break;
     case 'pronunciation':
       html += renderPronunciation(ex);
+      break;
+    case 'scene_intro':
+      html += renderSceneIntro(ex);
       break;
     case 'vocab_recall':
       html += renderVocabRecall(ex);
@@ -4101,7 +4124,9 @@ function renderExerciseContent(ex) {
   exerciseCard.innerHTML = html;
 
   // Post-render setup
-  if (type === 'hiragana_intro') {
+  if (type === 'scene_intro') {
+    setupSceneIntro(ex);
+  } else if (type === 'hiragana_intro') {
     setupHiraganaIntro(ex);
   } else if (type === 'hiragana_read') {
     setupHiraganaRead(ex);
@@ -4121,6 +4146,28 @@ function renderExerciseContent(ex) {
   } else if (type === 'hiragana_produce') {
     setupHiraganaProduce(ex);
   }
+}
+
+// ── Scene Intro (new phrase) ───────────────────────
+function renderSceneIntro(ex) {
+  return `
+    <div class="exercise-prompt" style="text-align:center;">
+      <p class="japanese-text" style="font-size:2rem; margin-bottom:0.5rem;">${escHtml(ex.japanese)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji || '')}</p>
+      <p style="font-size:1rem; color:var(--color-text-secondary);">${escHtml(ex.english)}</p>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupSceneIntro(ex) {
+  answered = true;
+  btnAction.textContent = 'Next';
+  btnAction.classList.remove('btn-skip-state');
+  btnAction.classList.add('btn-next-state');
+  btnAction.disabled = false;
+  // Play TTS after short delay
+  setTimeout(() => playYukiLine(ex.japanese), 300);
 }
 
 // ── Hiragana Intro ─────────────────────────────────
