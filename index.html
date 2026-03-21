@@ -5908,10 +5908,11 @@ document.getElementById('scene-mic').addEventListener('click', async () => {
   if (sceneExchange.classList.contains('scene-input-locked')) return;
 
   // If already listening, listenForSpeech toggles off and resolves
+  // Don't auto-submit — let user review, retry, or submit manually
   const transcript = await listenForSpeech();
   if (transcript) {
     input.value = transcript;
-    submitSceneResponse(transcript);
+    input.focus();
   }
 });
 
