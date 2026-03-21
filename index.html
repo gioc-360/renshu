@@ -5934,17 +5934,19 @@ document.getElementById('btn-scene-home').addEventListener('click', () => {
 });
 
 document.getElementById('btn-scene-drill-missed').addEventListener('click', () => {
-  // Collect prereq IDs for missed exchanges
+  // Collect ALL prereq IDs that match missed exchanges
   const { scenario, results } = sceneState;
   const missedPrereqIds = [];
   for (const r of results) {
     if (!r.isMatch) {
       const ex = scenario.exchanges[r.exchangeIdx];
-      const matched = scenario.prereqs.find(p =>
-        ex.accepts.some(a => normalizeJapanese(a).includes(normalizeJapanese(p.japanese)))
-      );
-      if (matched && !missedPrereqIds.includes(matched.id)) {
-        missedPrereqIds.push(matched.id);
+      // Find ALL prereqs whose japanese appears in any accept for this exchange
+      for (const p of scenario.prereqs) {
+        const normPrereq = normalizeJapanese(p.japanese);
+        const found = ex.accepts.some(a => normalizeJapanese(a).includes(normPrereq));
+        if (found && !missedPrereqIds.includes(p.id)) {
+          missedPrereqIds.push(p.id);
+        }
       }
     }
   }
