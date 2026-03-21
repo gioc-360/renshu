@@ -1913,6 +1913,10 @@
           <div class="scenario-title" id="scenario-title"></div>
           <div class="scenario-setting" id="scenario-setting"></div>
         </div>
+        <div class="scenario-card hidden" id="anchor-card">
+          <div class="scenario-title">Anchor Words</div>
+          <div class="scenario-setting">25 words that keep you in any conversation</div>
+        </div>
       </div>
       <div class="start-actions" id="start-actions">
         <button class="btn-primary" id="btn-start-session">begin</button>
@@ -1925,6 +1929,7 @@
     <div class="mode-selector" id="mode-selector">
       <button id="btn-mode-learn" onclick="window.__setMode('learn')">Hiragana</button>
       <button id="btn-mode-learn-katakana" onclick="window.__setMode('learn-katakana')">Katakana</button>
+      <button id="btn-mode-anchor" onclick="window.__setMode('anchor')">Anchor</button>
       <button id="btn-mode-action" class="active" onclick="window.__setMode('action')">Action</button>
     </div>
 
@@ -2074,6 +2079,7 @@ import n5Content from './src/data/n5-content.js';
 import hiraganaGroups, { confusablePairs } from './src/data/hiragana-groups.js';
 import katakanaGroups, { katakanaConfusablePairs } from './src/data/katakana-groups.js';
 import scenarios from './src/data/scenarios.js';
+import anchorWords from './src/data/anchor-words.js';
 import {
   createCard, schedule, retrievability, isDue,
   sortByUrgency, getDueCards, getNewCards,
@@ -3282,6 +3288,11 @@ function renderProgressionSection() {
     return;
   }
 
+  if (currentMode === 'anchor') {
+    renderAnchorProgression(section);
+    return;
+  }
+
   const history = loadSkillHistory();
   const lessons = n5Content.lessons;
   const currentLessonIdx = history.currentLesson || 0;
@@ -3403,6 +3414,39 @@ function renderLearningProgression(section) {
   }
 }
 
+function renderAnchorProgression(section) {
+  const fsrsState = loadFSRSState();
+  let learned = 0;
+  for (const w of anchorWords) {
+    const card = fsrsState[`anchor_${w.id}`];
+    if (card && card.state !== NEW && retrievability(card) > 0.5) {
+      learned++;
+    }
+  }
+  const total = anchorWords.length;
+  const pct = Math.round((learned / total) * 100);
+
+  section.innerHTML = `
+    <div class="progression-card">
+      <h4>Anchor Words</h4>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">Words Learned</span>
+          <span class="prog-count">${learned} / ${total}</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${pct}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const indicator = $('#lesson-indicator');
+  if (indicator) {
+    indicator.textContent = `Anchor Words \u2014 ${learned}/${total} learned`;
+  }
+}
+
 function renderLessonSelector() {
   const select = document.getElementById('lesson-select');
   if (!select) return;
@@ -3461,6 +3505,9 @@ function renderScenarioCard() {
   if (currentMode === 'action') {
     btnBegin.textContent = 'drill';
     btnScene.classList.remove('hidden');
+  } else if (currentMode === 'anchor') {
+    btnBegin.textContent = 'begin';
+    btnScene.classList.add('hidden');
   } else {
     btnBegin.textContent = 'begin';
     btnScene.classList.add('hidden');
@@ -3519,6 +3566,21 @@ function renderLessonPulse() {
       html += `<span style="opacity:${opacity.toFixed(2)}">${p.japanese}</span>`;
     }
     el.innerHTML = html;
+  } else if (currentMode === 'anchor') {
+    let html = '';
+    for (const w of anchorWords) {
+      const key = `anchor_${w.id}`;
+      const card = fsrsState[key];
+      let opacity;
+      if (!card || card.state === NEW) {
+        opacity = 0.2;
+      } else {
+        const r = retrievability(card);
+        opacity = 0.2 + 0.8 * r;
+      }
+      html += `<span style="opacity:${opacity.toFixed(2)}">${w.japanese}</span>`;
+    }
+    el.innerHTML = html;
   }
 }
 
@@ -3534,22 +3596,28 @@ window.__setMode = function(mode) {
 function updateModeUI() {
   const btnLearn = $('#btn-mode-learn');
   const btnLearnKatakana = $('#btn-mode-learn-katakana');
+  const btnAnchor = $('#btn-mode-anchor');
   const btnAction = $('#btn-mode-action');
   const lessonSelect = $('#lesson-select');
   const groupSelect = $('#group-select');
   const scenarioCard = $('#scenario-card');
+  const anchorCard = $('#anchor-card');
 
   btnLearn.classList.toggle('active', currentMode === 'learn');
   btnLearnKatakana.classList.toggle('active', currentMode === 'learn-katakana');
+  btnAnchor.classList.toggle('active', currentMode === 'anchor');
   btnAction.classList.toggle('active', currentMode === 'action');
 
   // Toggle which selector shows on front page
   lessonSelect.classList.add('hidden');
   groupSelect.classList.add('hidden');
   if (scenarioCard) scenarioCard.classList.add('hidden');
+  if (anchorCard) anchorCard.classList.add('hidden');
 
   if (currentMode === 'learn' || currentMode === 'learn-katakana') {
     groupSelect.classList.remove('hidden');
+  } else if (currentMode === 'anchor') {
+    if (anchorCard) anchorCard.classList.remove('hidden');
   } else if (currentMode === 'action') {
     if (scenarioCard) scenarioCard.classList.remove('hidden');
   }
@@ -3595,6 +3663,8 @@ async function startSession() {
     const groups = isKatakana ? katakanaGroups : hiraganaGroups;
     const pairs = isKatakana ? katakanaConfusablePairs : confusablePairs;
     exercises = generateLearningSession(groupIdx, groups, pairs);
+  } else if (currentMode === 'anchor') {
+    exercises = generateAnchorDrill();
   } else if (currentMode === 'action') {
     exercises = generateScenarioDrill(scenarios[0]);
   } else {
@@ -3643,6 +3713,103 @@ function normalizeRomaji(input) {
   s = s.replace(/nb/g, 'mb');
   s = s.replace(/np/g, 'mp');
   return s;
+}
+
+/**
+ * Generate a drill session for anchor words.
+ * FSRS-driven: due items first, then weakest, then new.
+ * 3 exercise types: context→produce, reading recall, meaning recall.
+ */
+function generateAnchorDrill() {
+  const fsrsState = loadFSRSState();
+  const words = [...anchorWords];
+
+  // Ensure FSRS cards exist for all anchor words
+  for (const w of words) {
+    const key = `anchor_${w.id}`;
+    if (!fsrsState[key]) {
+      fsrsState[key] = createCard(key, 'anchor');
+    }
+  }
+  saveFSRSState(fsrsState);
+
+  // Sort: due items first, then lowest retrievability, then NEW
+  words.sort((a, b) => {
+    const cardA = fsrsState[`anchor_${a.id}`];
+    const cardB = fsrsState[`anchor_${b.id}`];
+    const dueA = cardA.state !== NEW && isDue(cardA);
+    const dueB = cardB.state !== NEW && isDue(cardB);
+    if (dueA && !dueB) return -1;
+    if (!dueA && dueB) return 1;
+    const rA = cardA.state === NEW ? 0 : retrievability(cardA);
+    const rB = cardB.state === NEW ? 0 : retrievability(cardB);
+    return rA - rB;
+  });
+
+  // Take up to 8 items per session
+  const sessionItems = words.slice(0, 8);
+
+  const introExercises = [];
+  const drillExercises = [];
+
+  for (const w of sessionItems) {
+    const key = `anchor_${w.id}`;
+    const card = fsrsState[key];
+
+    // NEW items get an intro card first
+    if (card && card.state === NEW) {
+      introExercises.push({
+        type: 'anchor_intro',
+        japanese: w.japanese,
+        romaji: w.romaji,
+        english: w.english,
+        context: w.context,
+        category: w.category,
+        _anchorKey: key,
+      });
+    }
+
+    // Context → Produce: hear the situation, type the anchor word
+    drillExercises.push({
+      type: 'anchor_context',
+      context: w.context,
+      correct_kana: w.japanese.replace(/[？！?!]/g, ''),
+      correct_romaji: w.romaji.replace(/[？！?!]/g, ''),
+      correct_display: w.japanese,
+      english: w.english,
+      accepts: w.accepts,
+      _anchorKey: key,
+    });
+
+    // Reading Recall: see kana, type romaji
+    drillExercises.push({
+      type: 'anchor_read',
+      japanese: w.japanese,
+      correct_romaji: w.romaji.replace(/[？！?!]/g, ''),
+      english: w.english,
+      _anchorKey: key,
+    });
+
+    // Meaning Recall: see English, type kana
+    drillExercises.push({
+      type: 'anchor_produce',
+      english: w.english,
+      context: w.context,
+      correct_kana: w.japanese.replace(/[？！?!]/g, ''),
+      correct_romaji: w.romaji.replace(/[？！?!]/g, ''),
+      correct_display: w.japanese,
+      accepts: w.accepts,
+      _anchorKey: key,
+    });
+  }
+
+  // Shuffle drills, intros first
+  for (let i = drillExercises.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [drillExercises[i], drillExercises[j]] = [drillExercises[j], drillExercises[i]];
+  }
+
+  return [...introExercises, ...drillExercises];
 }
 
 /**
@@ -4090,6 +4257,10 @@ function renderExerciseContent(ex) {
     hiragana_vocab: 'Read Real Words',
     scene_intro: 'New Phrase',
     word_intro: 'New Word',
+    anchor_intro: 'New Anchor Word',
+    anchor_context: 'React',
+    anchor_read: 'Read It',
+    anchor_produce: 'Type It',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -4155,6 +4326,18 @@ function renderExerciseContent(ex) {
     case 'hiragana_vocab':
       html += renderHiraganaVocab(ex);
       break;
+    case 'anchor_intro':
+      html += renderAnchorIntro(ex);
+      break;
+    case 'anchor_context':
+      html += renderAnchorContext(ex);
+      break;
+    case 'anchor_read':
+      html += renderAnchorRead(ex);
+      break;
+    case 'anchor_produce':
+      html += renderAnchorProduce(ex);
+      break;
     default:
       html += `<p>Unknown exercise type: ${type}</p>`;
   }
@@ -4183,6 +4366,10 @@ function renderExerciseContent(ex) {
     setupProductionExercise(ex);
   } else if (type === 'hiragana_produce') {
     setupHiraganaProduce(ex);
+  } else if (type === 'anchor_intro') {
+    setupAnchorIntro(ex);
+  } else if (type === 'anchor_context' || type === 'anchor_read' || type === 'anchor_produce') {
+    setupAnchorExercise(ex);
   }
 }
 
@@ -4250,6 +4437,167 @@ function setupHiraganaIntro(ex) {
   btnAction.classList.remove('btn-skip-state');
   btnAction.classList.add('btn-next-state');
   btnAction.disabled = false;
+}
+
+// ── Anchor Word Intro ──────────────────────────────
+function renderAnchorIntro(ex) {
+  const catLabels = { reaction: 'Reaction', filler: 'Filler', acknowledgment: 'Acknowledgment', question: 'Question', emotion: 'Emotion' };
+  return `
+    <div class="exercise-prompt" style="text-align:center;">
+      <p style="font-size:0.7rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.75rem;">${catLabels[ex.category] || ex.category}</p>
+      <p class="japanese-text" style="font-size:2.5rem; margin-bottom:0.5rem;">${escHtml(ex.japanese)}</p>
+      <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji)}</p>
+      <p style="font-size:1.1rem; color:var(--color-text-secondary); margin-bottom:0.75rem;">${escHtml(ex.english)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted); font-style:italic;">${escHtml(ex.context)}</p>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupAnchorIntro(ex) {
+  answered = true;
+  btnAction.textContent = 'Next';
+  btnAction.classList.remove('btn-skip-state');
+  btnAction.classList.add('btn-next-state');
+  btnAction.disabled = false;
+  setTimeout(() => playYukiLine(ex.japanese), 300);
+}
+
+// ── Anchor Context → Produce ──────────────────────
+function renderAnchorContext(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">${escHtml(ex.context)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">What do you say?</p>
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="anchor-input" placeholder="kana or romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja" />
+      <button id="anchor-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+// ── Anchor Reading Recall ──────────────────────────
+function renderAnchorRead(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">How do you read this?</p>
+      <p class="japanese-text" style="font-size:2rem;">${escHtml(ex.japanese)}</p>
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="anchor-input" placeholder="Type romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <button id="anchor-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+// ── Anchor Meaning → Produce ──────────────────────
+function renderAnchorProduce(ex) {
+  return `
+    <div class="exercise-prompt">
+      <p class="instruction">Type the Japanese word</p>
+      <p class="english-text" style="font-size:1.25rem;">${escHtml(ex.english)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem; font-style:italic;">${escHtml(ex.context)}</p>
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="anchor-input" placeholder="kana or romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja" />
+      <button id="anchor-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+// ── Anchor Exercise Setup (shared) ─────────────────
+function setupAnchorExercise(ex) {
+  const input = exerciseCard.querySelector('#anchor-input');
+  const checkBtn = exerciseCard.querySelector('#anchor-check');
+  if (!input || !checkBtn) return;
+
+  const startTime = Date.now();
+  setTimeout(() => input.focus(), 300);
+
+  function checkAnswer() {
+    if (answered) return;
+    const userAnswer = input.value.trim();
+    if (!userAnswer) return;
+
+    let isCorrect = false;
+    const responseTime = Date.now() - startTime;
+
+    if (ex.type === 'anchor_read') {
+      // Kana → romaji: compare romaji
+      const normInput = normalizeRomaji(userAnswer.toLowerCase());
+      const normCorrect = normalizeRomaji(ex.correct_romaji);
+      isCorrect = normInput === normCorrect;
+    } else {
+      // anchor_context, anchor_produce: accept kana or romaji
+      if (ex.accepts) {
+        const normInput = userAnswer.toLowerCase().replace(/[？！?!。、\s]/g, '');
+        isCorrect = ex.accepts.some(a => {
+          const normA = a.toLowerCase().replace(/[？！?!。、\s]/g, '');
+          return normInput === normA;
+        });
+      }
+      if (!isCorrect) {
+        isCorrect = matchesAnswer(userAnswer, ex.correct_kana, ex.correct_romaji);
+      }
+    }
+
+    answered = true;
+    input.disabled = true;
+    checkBtn.disabled = true;
+
+    const isFast = isCorrect && responseTime < 2000;
+    if (isCorrect) {
+      input.classList.add(isFast ? 'input-correct-fast' : 'input-correct');
+    } else {
+      input.classList.add('input-incorrect');
+      setTimeout(() => input.classList.add('input-incorrect-fade'), 150);
+    }
+
+    // FSRS update
+    const rating = exerciseToRating(isCorrect, responseTime);
+    if (ex._anchorKey) {
+      ensureHiraFSRSCard(ex._anchorKey);
+      updateFSRSCard(ex._anchorKey, rating);
+    }
+
+    sessionResults.push({ type: ex.type, correct: isCorrect });
+    recordExerciseResult(ex.type, isCorrect);
+
+    if (!isCorrect) {
+      reinforceQueue.push(ex);
+    }
+
+    // Reveal correct answer on wrong
+    let revealHtml = '';
+    if (!isCorrect) {
+      if (ex.type === 'anchor_read') {
+        revealHtml = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text" style="font-family:var(--font-en);">${escHtml(ex.correct_romaji)}</p>
+        </div>`;
+      } else {
+        revealHtml = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text">${escHtml(ex.correct_display || ex.correct_kana)}</p>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.correct_kana)} (${escHtml(ex.correct_romaji)})</p>
+        </div>`;
+      }
+    }
+
+    const slot = exerciseCard.querySelector('#explanation-slot');
+    if (slot) slot.innerHTML = revealHtml;
+
+    showNextButton(isCorrect, isFast);
+  }
+
+  checkBtn.addEventListener('click', checkAnswer);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkAnswer();
+  });
 }
 
 // ── Hiragana Read ──────────────────────────────────
@@ -5325,6 +5673,9 @@ function goToNextExercise() {
 
     if (currentMode === 'learn' || currentMode === 'learn-katakana') {
       reinforcement = makeLearningReinforcement(wrongEx);
+    } else if (currentMode === 'anchor') {
+      // Re-insert the same exercise for anchor words
+      reinforcement = { ...wrongEx };
     } else {
       const history = loadSkillHistory();
       const currentLessonIdx = history.currentLesson || 0;
@@ -5465,6 +5816,10 @@ function finishSession() {
     hiragana_vocab: 'Read Real Words',
     scene_intro: 'New Phrase',
     word_intro: 'New Word',
+    anchor_intro: 'New Anchor Word',
+    anchor_context: 'React',
+    anchor_read: 'Read It',
+    anchor_produce: 'Type It',
   };
 
   const breakdownList = $('#breakdown-list');
