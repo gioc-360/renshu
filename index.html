@@ -6032,9 +6032,9 @@ function browserTTSFallback(text) {
 }
 
 let recognitionInstance = null;
-
 let sceneListening = false;
 let sceneListenResolve = null;
+let listenSessionId = 0; // Monotonic ID to prevent stale callbacks
 
 function listenForSpeech() {
   return new Promise((resolve) => {
@@ -6046,6 +6046,7 @@ function listenForSpeech() {
 
     const mic = document.getElementById('scene-mic');
     const input = document.getElementById('scene-input');
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     // Toggle off — stop and return what we have
     if (sceneListening && recognitionInstance) {
@@ -6053,14 +6054,22 @@ function listenForSpeech() {
       return; // onend handler will resolve via sceneListenResolve
     }
 
-    // Always create fresh instance (iOS Safari caches stale state)
-    recognitionInstance = new SpeechRecognition();
-    recognitionInstance.lang = 'ja-JP';
-    recognitionInstance.interimResults = true;
-    recognitionInstance.maxAlternatives = 3;
-    // Use non-continuous on mobile (more reliable), continuous on desktop
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    recognitionInstance.continuous = !isMobile;
+    // Kill any previous instance completely before creating new one
+    if (recognitionInstance) {
+      try { recognitionInstance.abort(); } catch (e) {}
+      recognitionInstance.onresult = null;
+      recognitionInstance.onerror = null;
+      recognitionInstance.onend = null;
+      recognitionInstance = null;
+    }
+
+    const sessionId = ++listenSessionId;
+    const rec = new SpeechRecognition();
+    recognitionInstance = rec;
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.maxAlternatives = 3;
+    rec.continuous = !isMobile;
 
     sceneListening = true;
     sceneListenResolve = resolve;
@@ -6068,16 +6077,34 @@ function listenForSpeech() {
 
     let finalTranscript = '';
     let lastResultTime = Date.now();
+    let retryCount = 0;
 
-    // Safety timeout — if no results for 8 seconds, stop
     const safetyTimer = setInterval(() => {
       if (Date.now() - lastResultTime > 8000 && sceneListening) {
-        try { recognitionInstance.stop(); } catch (e) {}
+        try { rec.stop(); } catch (e) {}
         clearInterval(safetyTimer);
       }
     }, 2000);
 
-    recognitionInstance.onresult = (event) => {
+    function cleanup() {
+      clearInterval(safetyTimer);
+      sceneListening = false;
+      mic.classList.remove('mic-listening');
+    }
+
+    function resolveOnce(value) {
+      // Only resolve if this is still the active session
+      if (sessionId !== listenSessionId) return;
+      cleanup();
+      if (sceneListenResolve) {
+        const r = sceneListenResolve;
+        sceneListenResolve = null;
+        r(value);
+      }
+    }
+
+    rec.onresult = (event) => {
+      if (sessionId !== listenSessionId) return;
       lastResultTime = Date.now();
       let interim = '';
       finalTranscript = '';
@@ -6091,32 +6118,30 @@ function listenForSpeech() {
       input.value = finalTranscript + interim;
     };
 
-    recognitionInstance.onerror = (e) => {
-      clearInterval(safetyTimer);
-      sceneListening = false;
-      mic.classList.remove('mic-listening');
-      if (sceneListenResolve) {
-        sceneListenResolve(finalTranscript || input.value || null);
-        sceneListenResolve = null;
+    rec.onerror = (e) => {
+      if (sessionId !== listenSessionId) return;
+      // On mobile, 'no-speech' fires frequently — auto-retry up to 2 times
+      if (isMobile && e.error === 'no-speech' && retryCount < 2) {
+        retryCount++;
+        try { rec.start(); } catch (err) {
+          resolveOnce(finalTranscript || input.value || null);
+        }
+        return;
       }
+      resolveOnce(finalTranscript || input.value || null);
     };
 
-    recognitionInstance.onend = () => {
-      clearInterval(safetyTimer);
-      sceneListening = false;
-      mic.classList.remove('mic-listening');
-      if (sceneListenResolve) {
-        sceneListenResolve(finalTranscript || input.value || null);
-        sceneListenResolve = null;
-      }
+    rec.onend = () => {
+      if (sessionId !== listenSessionId) return;
+      // On mobile non-continuous mode, 'onend' fires after each utterance.
+      // If we got a transcript, resolve. If not and no error, it just stopped.
+      resolveOnce(finalTranscript || input.value || null);
     };
 
     try {
-      recognitionInstance.start();
+      rec.start();
     } catch (e) {
-      clearInterval(safetyTimer);
-      sceneListening = false;
-      mic.classList.remove('mic-listening');
+      cleanup();
       resolve(null);
       sceneListenResolve = null;
     }
@@ -6124,9 +6149,14 @@ function listenForSpeech() {
 }
 
 function stopListening() {
+  listenSessionId++; // Invalidate any in-flight session
   sceneListening = false;
   if (recognitionInstance) {
     try { recognitionInstance.abort(); } catch (e) {}
+    recognitionInstance.onresult = null;
+    recognitionInstance.onerror = null;
+    recognitionInstance.onend = null;
+    recognitionInstance = null;
   }
   const mic = document.getElementById('scene-mic');
   if (mic) mic.classList.remove('mic-listening');
