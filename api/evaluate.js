@@ -31,7 +31,7 @@ Rules:
 - When in doubt between GOOD and HARD, lean GOOD. The learner is practicing — reward attempts that work.
 - If the normalized input is empty, rate AGAIN with feedback about not responding.
 - For GOOD ratings, teach the social principle behind why their response works — make the learner think about the conversational dynamics at play. e.g. "よう (you) — you matched their energy, which signals you're equals. That sets the register for the whole conversation."
-- For HARD/AGAIN, always show what to say instead with romaji: e.g. "Try よう (you) — こんにちは is for strangers, not friends."`;
+- For HARD/AGAIN, first explain what the learner actually said in English (e.g. "じゃあね (jaane) means 'see you later'"), then explain why it's wrong in this context, then show what to say instead with romaji. The learner is a beginner — they may not know what their own answer means.`;
 
 const ALLOWED_ORIGIN = 'https://gioc-360.github.io';
 

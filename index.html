@@ -1747,6 +1747,12 @@
     .scene-line-reading {
       font-size: 0.7rem;
       color: var(--color-text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .scene-line-en {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
       margin-bottom: 1rem;
     }
 
@@ -2007,6 +2013,7 @@
       <div class="scene-speaker" id="scene-speaker"></div>
       <div class="scene-line" id="scene-line"></div>
       <div class="scene-line-reading" id="scene-line-reading"></div>
+      <div class="scene-line-en" id="scene-line-en"></div>
       <div class="scene-prompt" id="scene-prompt"></div>
       <div class="production-input-group" id="scene-input-group">
         <input type="text" id="scene-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="">
@@ -5695,6 +5702,7 @@ function renderSceneExchange() {
   document.getElementById('scene-speaker').textContent = ex.speaker === 'friend' ? 'Yuki' : '';
   document.getElementById('scene-line').textContent = ex.line;
   document.getElementById('scene-line-reading').textContent = ex.lineReading;
+  document.getElementById('scene-line-en').textContent = ex.lineEn || '';
   document.getElementById('scene-prompt').textContent = ex.prompt;
   document.getElementById('scene-progress').textContent = `${exchangeIdx + 1} / ${scenario.exchanges.length}`;
 
