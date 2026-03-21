@@ -1641,8 +1641,12 @@
     }
 
     .mic-btn {
-      font-size: 0.6rem;
-      padding: 0.6rem 0.75rem;
+      display: block;
+      margin: 1rem auto 0;
+      font-size: 1.2rem;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
       border: 1px solid var(--color-border);
       background: transparent;
       color: var(--color-text-muted);
@@ -1668,8 +1672,8 @@
     }
 
     .scene-input-locked input,
-    .scene-input-locked .mic-btn,
-    .scene-input-locked button {
+    .scene-input-locked button,
+    .scene-input-locked .mic-btn {
       opacity: 0.3;
       pointer-events: none;
     }
@@ -1704,7 +1708,7 @@
     /* ── Scene (Action mode) ─────────────────────────── */
     .scene-header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
 
     #scene-setting-header {
@@ -1743,7 +1747,7 @@
     .scene-line-reading {
       font-size: 0.7rem;
       color: var(--color-text-muted);
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .scene-prompt {
@@ -2006,9 +2010,9 @@
       <div class="scene-prompt" id="scene-prompt"></div>
       <div class="production-input-group" id="scene-input-group">
         <input type="text" id="scene-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="">
-        <button id="scene-mic" class="mic-btn" aria-label="Voice input">●</button>
         <button id="scene-submit">→</button>
       </div>
+      <button id="scene-mic" class="mic-btn" aria-label="Voice input">●</button>
       <div class="scene-feedback hidden" id="scene-feedback"></div>
       <div class="scene-nudge hidden" id="scene-nudge"></div>
     </div>
@@ -5565,6 +5569,8 @@ function browserTTSFallback(text) {
 
 let recognitionInstance = null;
 
+let sceneListening = false;
+
 function listenForSpeech() {
   return new Promise((resolve) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -5573,38 +5579,48 @@ function listenForSpeech() {
       return;
     }
 
-    if (!recognitionInstance) {
-      recognitionInstance = new SpeechRecognition();
-      recognitionInstance.lang = 'ja-JP';
-      recognitionInstance.interimResults = false;
-      recognitionInstance.maxAlternatives = 1;
-      recognitionInstance.continuous = false;
+    const mic = document.getElementById('scene-mic');
+    const input = document.getElementById('scene-input');
+
+    // Toggle off — stop and return what we have
+    if (sceneListening && recognitionInstance) {
+      recognitionInstance.stop();
+      return; // onend handler will resolve
     }
 
-    const mic = document.getElementById('scene-mic');
+    recognitionInstance = new SpeechRecognition();
+    recognitionInstance.lang = 'ja-JP';
+    recognitionInstance.interimResults = true;
+    recognitionInstance.maxAlternatives = 1;
+    recognitionInstance.continuous = true;
+
+    sceneListening = true;
     mic.classList.add('mic-listening');
 
-    let resolved = false;
+    let finalTranscript = '';
+
     recognitionInstance.onresult = (event) => {
-      if (resolved) return;
-      resolved = true;
-      const transcript = event.results[0][0].transcript;
-      mic.classList.remove('mic-listening');
-      resolve(transcript);
+      let interim = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      input.value = finalTranscript + interim;
     };
 
     recognitionInstance.onerror = () => {
-      if (resolved) return;
-      resolved = true;
+      sceneListening = false;
       mic.classList.remove('mic-listening');
-      resolve(null);
+      resolve(finalTranscript || null);
     };
 
     recognitionInstance.onend = () => {
-      if (resolved) return;
-      resolved = true;
+      sceneListening = false;
       mic.classList.remove('mic-listening');
-      resolve(null);
+      resolve(finalTranscript || input.value || null);
     };
 
     recognitionInstance.start();
@@ -5612,6 +5628,7 @@ function listenForSpeech() {
 }
 
 function stopListening() {
+  sceneListening = false;
   if (recognitionInstance) {
     try { recognitionInstance.abort(); } catch (e) {}
   }
@@ -5671,7 +5688,8 @@ function renderSceneExchange() {
   inputGroup.classList.remove('hidden');
 
   // Lock input during TTS
-  inputGroup.classList.add('scene-input-locked');
+  const sceneExchange = document.getElementById('scene-exchange');
+  sceneExchange.classList.add('scene-input-locked');
 
   // Populate
   document.getElementById('scene-speaker').textContent = ex.speaker === 'friend' ? 'Yuki' : '';
@@ -5682,7 +5700,7 @@ function renderSceneExchange() {
 
   // Play Yuki's line, then unlock input and start timers
   playYukiLine(ex.line).then(() => {
-    inputGroup.classList.remove('scene-input-locked');
+    sceneExchange.classList.remove('scene-input-locked');
     input.focus();
 
     sceneState.nudgeTimer = setTimeout(() => {
@@ -5886,9 +5904,10 @@ document.getElementById('scene-next').addEventListener('click', () => {
 document.getElementById('scene-mic').addEventListener('click', async () => {
   const input = document.getElementById('scene-input');
   if (input.disabled) return;
-  const inputGroup = document.getElementById('scene-input-group');
-  if (inputGroup.classList.contains('scene-input-locked')) return;
+  const sceneExchange = document.getElementById('scene-exchange');
+  if (sceneExchange.classList.contains('scene-input-locked')) return;
 
+  // If already listening, listenForSpeech toggles off and resolves
   const transcript = await listenForSpeech();
   if (transcript) {
     input.value = transcript;
