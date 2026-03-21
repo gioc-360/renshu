@@ -3758,6 +3758,24 @@ function generateLearningSession(groupIdx, groups, confusables) {
     });
   }
 
+  // Intro cards for words with any NEW characters
+  for (const word of currentGroupWords) {
+    const hasNew = word.kana.split('').some(ch => {
+      const card = fsrsState[`${prefix}${ch}`];
+      return !card || card.state === NEW;
+    });
+    if (hasNew) {
+      exerciseList.push({
+        type: 'word_intro',
+        japanese: word.kana,
+        romaji: word.romaji,
+        english: word.english,
+        breakdown: word.breakdown,
+        _isKatakana: isKatakana,
+      });
+    }
+  }
+
   // Build varied exercises — weak words get more types
   const exerciseTypes = ['read', 'spot', 'reverse', 'listen', 'build', 'produce'];
 
@@ -3807,14 +3825,11 @@ function generateLearningSession(groupIdx, groups, confusables) {
     }
   }
 
-  // Cap at 8 — fast cycles, not marathons
-  const hasIntro = exerciseList.length > 0 && exerciseList[0]._isIntro;
-  if (hasIntro) {
-    const intro = exerciseList.shift();
-    const capped = shuffle(exerciseList).slice(0, 8);
-    return [intro, ...smartInterleave(capped)];
-  }
-  return smartInterleave(shuffle(exerciseList).slice(0, 8));
+  // Separate intros from drills — intros first, then capped shuffled drills
+  const intros = exerciseList.filter(e => e._isIntro || e.type === 'word_intro');
+  const drills = exerciseList.filter(e => !e._isIntro && e.type !== 'word_intro');
+  const capped = shuffle(drills).slice(0, 8);
+  return [...intros, ...smartInterleave(capped)];
 }
 
 function makeHiraganaRead(word) {
@@ -4055,6 +4070,7 @@ function renderExerciseContent(ex) {
     hiragana_produce: 'Type Kana',
     hiragana_vocab: 'Read Real Words',
     scene_intro: 'New Phrase',
+    word_intro: 'New Word',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -4080,6 +4096,9 @@ function renderExerciseContent(ex) {
       break;
     case 'scene_intro':
       html += renderSceneIntro(ex);
+      break;
+    case 'word_intro':
+      html += renderWordIntro(ex);
       break;
     case 'vocab_recall':
       html += renderVocabRecall(ex);
@@ -4124,7 +4143,7 @@ function renderExerciseContent(ex) {
   exerciseCard.innerHTML = html;
 
   // Post-render setup
-  if (type === 'scene_intro') {
+  if (type === 'scene_intro' || type === 'word_intro') {
     setupSceneIntro(ex);
   } else if (type === 'hiragana_intro') {
     setupHiraganaIntro(ex);
@@ -4155,6 +4174,21 @@ function renderSceneIntro(ex) {
       <p class="japanese-text" style="font-size:2rem; margin-bottom:0.5rem;">${escHtml(ex.japanese)}</p>
       <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji || '')}</p>
       <p style="font-size:1rem; color:var(--color-text-secondary);">${escHtml(ex.english)}</p>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function renderWordIntro(ex) {
+  const breakdownHtml = ex.breakdown
+    ? ex.breakdown.map(b => `${b.char} (${b.romaji})`).join(' + ')
+    : '';
+  return `
+    <div class="exercise-prompt" style="text-align:center;">
+      <p class="japanese-text" style="font-size:2rem; margin-bottom:0.5rem;">${escHtml(ex.japanese)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji || '')}</p>
+      <p style="font-size:1rem; color:var(--color-text-secondary); margin-bottom:0.5rem;">${escHtml(ex.english)}</p>
+      ${breakdownHtml ? `<p style="font-size:0.75rem; color:var(--color-text-muted);">${breakdownHtml}</p>` : ''}
     </div>
     <div id="explanation-slot"></div>
   `;
@@ -5410,6 +5444,8 @@ function finishSession() {
     hiragana_build: 'Build the Word',
     hiragana_produce: 'Type Kana',
     hiragana_vocab: 'Read Real Words',
+    scene_intro: 'New Phrase',
+    word_intro: 'New Word',
   };
 
   const breakdownList = $('#breakdown-list');
