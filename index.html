@@ -6282,6 +6282,13 @@ function listenForSpeech() {
       clearInterval(safetyTimer);
       sceneListening = false;
       mic.classList.remove('mic-listening');
+      // Fully release the instance so stopListening() doesn't abort an already-ended session
+      if (recognitionInstance === rec) {
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        recognitionInstance = null;
+      }
     }
 
     function resolveOnce(value) {
@@ -6330,18 +6337,13 @@ function listenForSpeech() {
       resolveOnce(finalTranscript || input.value || null);
     };
 
-    // On iOS, delay start to let the browser fully release the mic from any previous session
-    const startDelay = isMobile ? 300 : 0;
-    setTimeout(() => {
-      if (sessionId !== listenSessionId) { cleanup(); return; }
-      try {
-        rec.start();
-      } catch (e) {
-        cleanup();
-        resolve(null);
-        sceneListenResolve = null;
-      }
-    }, startDelay);
+    try {
+      rec.start();
+    } catch (e) {
+      cleanup();
+      resolve(null);
+      sceneListenResolve = null;
+    }
   });
 }
 
