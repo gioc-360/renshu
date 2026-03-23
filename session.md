@@ -45,7 +45,7 @@ Fail loud. Small errors compound until heavy to carry. Every layer makes errors 
 
 ## Kill List
 Kill: Chat UI/bubbles, gamification/XP/levels, general AI tutor/sensei, pronunciation scoring, furigana toggle, multiple-choice
-Defer: AI-powered scene drills (Function 3 — scoped, build after anchor words), additional scenarios beyond friend, N4+ content, graded reading, export/import, pitch accent, Dynamic Yuki, progressive scaffolding, per-phrase speed memory, Korean mode, stroke tracing exercises
+Defer: AI-powered scene drills (Function 3 — scoped, build after anchor words), additional scenarios beyond friend, N4+ content, graded reading, export/import, pitch accent, Dynamic Yuki, progressive scaffolding, per-phrase speed memory, Korean mode, stroke tracing exercises, Whisper STT fallback for mobile
 Ego: (none identified)
 
 ## Deployment
@@ -81,6 +81,7 @@ Surface: Kenya Hara design system, envisioning-information
 - FEATURES.md generated for systematic design review
 - Shipped (2026-03-22): enhanced character intros — stroke animation (KanjiVG), kanji origin stories, per-character cards for groups 1-9
 - Discussed: Korean mode (deferred — no user to design for), stroke tracing exercise (deferred — scope creep)
+- iOS voice bug: second scene exchange mic fails. Tried multiple fixes (delay, cleanup, shared instance). Root cause is iOS SpeechRecognition API not releasing audio session between instances. Exchange 1 works, exchange 2 doesn't. Whisper fallback discussed and deferred — not worth the complexity for one user on desktop. Typing on mobile is fine for now.
 
 ## Increment Plan (v2 — Action Mode)
 1. **Friend scenario content** — casual register phrases, accept-lists per exchange, FSRS items ✓
