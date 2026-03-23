@@ -2895,6 +2895,8 @@ let jaVoice = null;
 
 // STT
 const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const AI_TRANSCRIBE_URL = 'https://renshu-iota.vercel.app/api/transcribe';
 let recognition = null;
 let isRecording = false;
 
@@ -4471,6 +4473,7 @@ function renderSceneIntro(ex) {
       <p class="japanese-text" style="font-size:2rem; margin-bottom:0.5rem;">${escHtml(ex.japanese)}</p>
       <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji || '')}</p>
       <p style="font-size:1rem; color:var(--color-text-secondary);">${escHtml(ex.english)}</p>
+      <button class="btn-play-audio" id="btn-replay-intro" style="font-size:1.5rem; background:none; border:1px solid var(--color-border); padding:0.5rem 1.25rem; cursor:pointer; margin-top:1rem;">&#9654;</button>
     </div>
     <div id="explanation-slot"></div>
   `;
@@ -4486,6 +4489,7 @@ function renderWordIntro(ex) {
       <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji || '')}</p>
       <p style="font-size:1rem; color:var(--color-text-secondary); margin-bottom:0.5rem;">${escHtml(ex.english)}</p>
       ${breakdownHtml ? `<p style="font-size:0.75rem; color:var(--color-text-muted);">${breakdownHtml}</p>` : ''}
+      <button class="btn-play-audio" id="btn-replay-intro" style="font-size:1.5rem; background:none; border:1px solid var(--color-border); padding:0.5rem 1.25rem; cursor:pointer; margin-top:1rem;">&#9654;</button>
     </div>
     <div id="explanation-slot"></div>
   `;
@@ -4498,7 +4502,9 @@ function setupSceneIntro(ex) {
   btnAction.classList.add('btn-next-state');
   btnAction.disabled = false;
   // Play TTS after short delay
-  setTimeout(() => playYukiLine(ex.japanese), 300);
+  setTimeout(() => speakJapanese(ex.japanese), 300);
+  const replayBtn = exerciseCard.querySelector('#btn-replay-intro');
+  if (replayBtn) replayBtn.addEventListener('click', () => speakJapanese(ex.japanese));
 }
 
 // ── Character Intro (stroke animation + origin story) ──
@@ -4617,6 +4623,7 @@ function renderAnchorIntro(ex) {
       <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:0.25rem;">${escHtml(ex.romaji)}</p>
       <p style="font-size:1.1rem; color:var(--color-text-secondary); margin-bottom:0.75rem;">${escHtml(ex.english)}</p>
       <p style="font-size:0.85rem; color:var(--color-text-muted); font-style:italic;">${escHtml(ex.context)}</p>
+      <button class="btn-play-audio" id="btn-replay-intro" style="font-size:1.5rem; background:none; border:1px solid var(--color-border); padding:0.5rem 1.25rem; cursor:pointer; margin-top:1rem;">&#9654;</button>
     </div>
     <div id="explanation-slot"></div>
   `;
@@ -4628,7 +4635,9 @@ function setupAnchorIntro(ex) {
   btnAction.classList.remove('btn-skip-state');
   btnAction.classList.add('btn-next-state');
   btnAction.disabled = false;
-  setTimeout(() => playYukiLine(ex.japanese), 300);
+  setTimeout(() => speakJapanese(ex.japanese), 300);
+  const replayBtn = exerciseCard.querySelector('#btn-replay-intro');
+  if (replayBtn) replayBtn.addEventListener('click', () => speakJapanese(ex.japanese));
 }
 
 // ── Anchor Context → Produce ──────────────────────
@@ -5366,7 +5375,9 @@ function setupPronunciation(ex) {
   const expectedRomaji = ex.romaji || null;        // romaji reading
   let pendingTranscript = null;
 
-  if (!SpeechRecognitionAPI) {
+  const useMobileWhisper = isMobile;
+
+  if (!SpeechRecognitionAPI && !useMobileWhisper) {
     btnRecord.disabled = true;
     resultBox.classList.remove('hidden');
     exerciseCard.querySelector('#pron-detected').textContent = 'Speech recognition not supported in this browser.';
@@ -5426,56 +5437,125 @@ function setupPronunciation(ex) {
     }
   }
 
-  btnRecord.addEventListener('click', () => {
+  // Mobile: MediaRecorder + Whisper for pronunciation
+  let pronRecorder = null;
+  let pronStream = null;
+
+  btnRecord.addEventListener('click', async () => {
     if (answered) return;
 
-    // State: recording → stop recording, then process
-    if (isRecording && recognition) {
-      recognition.stop();
-      return;
-    }
+    if (useMobileWhisper) {
+      // ── Mobile: Whisper path ──
+      if (isRecording && pronRecorder && pronRecorder.state === 'recording') {
+        pronRecorder.stop();
+        return;
+      }
 
-    // State: idle → start recording
-    pendingTranscript = null;
-    recognition = new SpeechRecognitionAPI();
-    recognition.lang = 'ja-JP';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = true;
+      try {
+        pronStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        resultBox.classList.remove('hidden');
+        exerciseCard.querySelector('#pron-detected').textContent = 'Microphone access denied. Please allow mic permissions.';
+        return;
+      }
 
-    recognition.onstart = () => {
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      pronRecorder = new MediaRecorder(pronStream, mimeType ? { mimeType } : {});
+      const chunks = [];
+
       isRecording = true;
       setButtonState('stop');
-    };
+      pendingTranscript = null;
 
-    recognition.onresult = (event) => {
-      // Collect transcript but don't process yet — wait for user to click Stop
-      const last = event.results[event.results.length - 1];
-      pendingTranscript = last[0].transcript;
-    };
+      pronRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
-    recognition.onerror = (event) => {
-      isRecording = false;
-      setButtonState('record');
-      resultBox.classList.remove('hidden');
-      const detectedEl = exerciseCard.querySelector('#pron-detected');
-      if (event.error === 'not-allowed') {
-        detectedEl.textContent = 'Microphone access denied. Please allow mic permissions.';
-      } else if (event.error !== 'aborted') {
-        detectedEl.textContent = `Error: ${event.error}. Tap Record to try again.`;
+      pronRecorder.onstop = async () => {
+        if (pronStream) { pronStream.getTracks().forEach(t => t.stop()); pronStream = null; }
+        isRecording = false;
+        setButtonState('record');
+        pronRecorder = null;
+
+        const blob = new Blob(chunks, { type: mimeType || 'audio/mp4' });
+        if (blob.size < 100) return;
+
+        // Show transcribing state
+        resultBox.classList.remove('hidden');
+        exerciseCard.querySelector('#pron-detected').textContent = '...';
+
+        try {
+          const res = await fetch(AI_TRANSCRIBE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': mimeType || 'audio/mp4' },
+            body: blob,
+          });
+          if (!res.ok) throw new Error('Whisper ' + res.status);
+          const data = await res.json();
+          const text = (data.text || '').trim();
+          if (text && !answered) processResult(text);
+          else {
+            exerciseCard.querySelector('#pron-detected').textContent = 'No speech detected. Try again.';
+          }
+        } catch (e) {
+          console.warn('Whisper failed:', e);
+          exerciseCard.querySelector('#pron-detected').textContent = 'Transcription failed. Try again.';
+        }
+      };
+
+      pronRecorder.onerror = () => {
+        if (pronStream) { pronStream.getTracks().forEach(t => t.stop()); pronStream = null; }
+        isRecording = false;
+        setButtonState('record');
+        pronRecorder = null;
+      };
+
+      pronRecorder.start();
+    } else {
+      // ── Desktop: Web Speech API path ──
+      if (isRecording && recognition) {
+        recognition.stop();
+        return;
       }
-    };
 
-    recognition.onend = () => {
-      isRecording = false;
-      setButtonState('record');
-      // Process after stop
-      if (pendingTranscript && !answered) {
-        processResult(pendingTranscript);
-      }
-    };
+      pendingTranscript = null;
+      recognition = new SpeechRecognitionAPI();
+      recognition.lang = 'ja-JP';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = true;
 
-    recognition.start();
+      recognition.onstart = () => {
+        isRecording = true;
+        setButtonState('stop');
+      };
+
+      recognition.onresult = (event) => {
+        const last = event.results[event.results.length - 1];
+        pendingTranscript = last[0].transcript;
+      };
+
+      recognition.onerror = (event) => {
+        isRecording = false;
+        setButtonState('record');
+        resultBox.classList.remove('hidden');
+        const detectedEl = exerciseCard.querySelector('#pron-detected');
+        if (event.error === 'not-allowed') {
+          detectedEl.textContent = 'Microphone access denied. Please allow mic permissions.';
+        } else if (event.error !== 'aborted') {
+          detectedEl.textContent = `Error: ${event.error}. Tap Record to try again.`;
+        }
+      };
+
+      recognition.onend = () => {
+        isRecording = false;
+        setButtonState('record');
+        if (pendingTranscript && !answered) {
+          processResult(pendingTranscript);
+        }
+      };
+
+      recognition.start();
+    }
   });
 
   // "Hear correct pronunciation" button — TTS playback of the expected text
@@ -6207,6 +6287,12 @@ async function playYukiLine(text) {
     console.warn('TTS API failed, falling back to browser speech:', e);
     await browserTTSFallback(text);
   } finally {
+    // Explicitly release audio element so iOS frees the audio session
+    if (ttsAudioElement) {
+      ttsAudioElement.pause();
+      ttsAudioElement.src = '';
+      ttsAudioElement.load();
+    }
     lineEl.classList.remove('tts-playing');
     ttsAudioElement = null;
   }
@@ -6225,11 +6311,107 @@ function browserTTSFallback(text) {
 
 let recognitionInstance = null;
 let sceneListening = false;
-let sceneListenResolve = null;
 let listenSessionId = 0;
-const isMobileSpeech = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-function listenForSpeech() {
+// ── Mobile: MediaRecorder + Whisper ──
+let mobileRecorder = null;
+let mobileStream = null;
+let mobileChunks = [];
+
+function cleanupMobileRecording() {
+  if (mobileStream) {
+    mobileStream.getTracks().forEach(t => t.stop());
+    mobileStream = null;
+  }
+  mobileRecorder = null;
+  mobileChunks = [];
+  sceneListening = false;
+  const mic = document.getElementById('scene-mic');
+  if (mic) mic.classList.remove('mic-listening');
+}
+
+async function startMobileRecording() {
+  // Clean up any leftover state
+  cleanupMobileRecording();
+
+  const mic = document.getElementById('scene-mic');
+  const input = document.getElementById('scene-input');
+
+  try {
+    mobileStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    console.warn('Mic access denied:', e);
+    return;
+  }
+
+  const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+    : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+    : '';
+
+  mobileChunks = [];
+  const recorder = new MediaRecorder(mobileStream, mimeType ? { mimeType } : {});
+  mobileRecorder = recorder;
+
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) mobileChunks.push(e.data);
+  };
+
+  recorder.start();
+  sceneListening = true;
+  mic.classList.add('mic-listening');
+  input.value = '';
+}
+
+async function stopAndTranscribeWhisper() {
+  const input = document.getElementById('scene-input');
+  const recorder = mobileRecorder;
+
+  if (!recorder || recorder.state !== 'recording') {
+    cleanupMobileRecording();
+    return null;
+  }
+
+  // Collect final data: stop() triggers one last ondataavailable, then onstop
+  await new Promise((resolve) => {
+    recorder.onstop = resolve;
+    recorder.stop();
+  });
+
+  // Release mic immediately
+  if (mobileStream) {
+    mobileStream.getTracks().forEach(t => t.stop());
+    mobileStream = null;
+  }
+  sceneListening = false;
+  const mic = document.getElementById('scene-mic');
+  if (mic) mic.classList.remove('mic-listening');
+  mobileRecorder = null;
+
+  const mimeType = recorder.mimeType || 'audio/mp4';
+  const blob = new Blob(mobileChunks, { type: mimeType });
+  mobileChunks = [];
+
+  if (blob.size < 100) return null;
+
+  // Send to Whisper
+  input.value = '...';
+  try {
+    const res = await fetch(AI_TRANSCRIBE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': mimeType },
+      body: blob,
+    });
+    if (!res.ok) throw new Error('Whisper API ' + res.status);
+    const data = await res.json();
+    return (data.text || '').trim() || null;
+  } catch (e) {
+    console.warn('Whisper transcription failed:', e);
+    return null;
+  }
+}
+
+// ── Desktop: Web Speech API ──
+function listenWebSpeech() {
   return new Promise((resolve) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { resolve(null); return; }
@@ -6237,7 +6419,7 @@ function listenForSpeech() {
     const mic = document.getElementById('scene-mic');
     const input = document.getElementById('scene-input');
 
-    // Toggle off — stop and return what we have
+    // Toggle off
     if (sceneListening && recognitionInstance) {
       try { recognitionInstance.stop(); } catch (e) {}
       return;
@@ -6258,15 +6440,13 @@ function listenForSpeech() {
     rec.lang = 'ja-JP';
     rec.interimResults = true;
     rec.maxAlternatives = 3;
-    rec.continuous = !isMobileSpeech;
+    rec.continuous = true;
 
     sceneListening = true;
-    sceneListenResolve = resolve;
     mic.classList.add('mic-listening');
 
     let finalTranscript = '';
     let lastResultTime = Date.now();
-    let retryCount = 0;
 
     const safetyTimer = setInterval(() => {
       if (Date.now() - lastResultTime > 8000 && sceneListening) {
@@ -6290,11 +6470,7 @@ function listenForSpeech() {
     function resolveOnce(value) {
       if (sessionId !== listenSessionId) return;
       cleanup();
-      if (sceneListenResolve) {
-        const r = sceneListenResolve;
-        sceneListenResolve = null;
-        r(value);
-      }
+      resolve(value);
     }
 
     rec.onresult = (event) => {
@@ -6314,13 +6490,6 @@ function listenForSpeech() {
 
     rec.onerror = (e) => {
       if (sessionId !== listenSessionId) return;
-      if (isMobileSpeech && e.error === 'no-speech' && retryCount < 2) {
-        retryCount++;
-        try { rec.start(); } catch (err) {
-          resolveOnce(finalTranscript || input.value || null);
-        }
-        return;
-      }
       resolveOnce(finalTranscript || input.value || null);
     };
 
@@ -6334,14 +6503,40 @@ function listenForSpeech() {
     } catch (e) {
       cleanup();
       resolve(null);
-      sceneListenResolve = null;
     }
   });
+}
+
+// ── Unified entry point ──
+async function listenForSpeech() {
+  if (isMobile) {
+    if (sceneListening && mobileRecorder) {
+      // Stop recording and transcribe
+      return await stopAndTranscribeWhisper();
+    } else {
+      // Start recording — no transcript yet
+      await startMobileRecording();
+      return null;
+    }
+  } else {
+    return listenWebSpeech();
+  }
 }
 
 function stopListening() {
   listenSessionId++;
   sceneListening = false;
+  // Mobile cleanup (discard, don't transcribe)
+  if (mobileRecorder) {
+    try { if (mobileRecorder.state === 'recording') mobileRecorder.stop(); } catch (e) {}
+  }
+  if (mobileStream) {
+    mobileStream.getTracks().forEach(t => t.stop());
+    mobileStream = null;
+  }
+  mobileRecorder = null;
+  mobileChunks = [];
+  // Desktop cleanup
   if (recognitionInstance) {
     try { recognitionInstance.stop(); } catch (e) {}
     recognitionInstance.onresult = null;
