@@ -1,26 +1,30 @@
 ## Current Phase
-Plan + Handoff (v4 — Anchor Words) — TC1 ✓, TC2 ✓
+Polish (v4 — Anchor Words) — TC1 ✓, TC2 ✓, TC3 ✓, TC4 ✓, TC5 pending
 
 ## Locked Scope
 `renshu(daily_open) → scenario_readiness → situated_production`
 
-Three modes: Hiragana, Katakana, Action.
+Four modes: Hiragana, Katakana, Anchor Words, Action.
 Action absorbs Practice. Scenarios are the organizing unit, not textbook lessons.
+Anchor Words fills the vocabulary gap between kana and scenarios.
 
 ### Function 3: AI-Powered Scene Drills (scoped, not yet built)
 `drillEval(user_input_typed_or_spoken, drill_item) → ai_rating + tts_playback_at_controlled_speed`
 
 Drills are scene rehearsal — each item is a conversational exchange with Yuki, not isolated vocab recall. Guide words scaffold production. AI evaluates thinking (appropriate, natural, correct register), not string matching. 8 exchanges per session, FSRS-ordered. TTS plays Yuki's line at learner-controlled speed. Mic + keyboard input.
 
-### Function 4: Anchor Words (scouting)
-Raw insight from another Japanese learner: "you just need anchor words to get started talking." Anchor words are the 20-30 high-frequency words that let you stay in ANY conversation — reactions, fillers, questions, acknowledgments, emotions. The current app has no vocabulary layer between kana and scenario-specific prereqs. A beginner goes from reading characters to being expected to produce scenario responses with no conversational foundation.
+### Function 4: Anchor Words (shipped 2026-03-22)
+`anchorDrill(anchor_word_item) → production_exercise + audio_model + FSRS_scheduling`
 
-Anchor word categories identified:
-- Reactions: まじで？, すごい, いいね, えー, うそ, そうなんだ, なるほど
-- Fillers: えっと, あの, じゃあ, でも, それで
-- Acknowledgments: うん, そう, はい, ああ
-- Questions: なに？, どこ？, いつ？, なんで？, ほんと？
-- Emotions: やばい, たのしい, つらい, うれしい
+25 high-frequency conversational glue words across 5 categories:
+- Reactions (7): まじで？, すごい, いいね, えー, うそ, そうなんだ, なるほど
+- Fillers (5): えっと, あの, じゃあ, でも, それで
+- Acknowledgments (4): うん, そう, はい, ああ
+- Questions (5): なに？, どこ？, いつ？, なんで？, ほんと？
+- Emotions (4): やばい, たのしい, つらい, うれしい
+
+Three exercise types: context→produce, reading recall, meaning recall.
+Accept-list evaluation (no AI). FSRS scheduling. Intro cards with TTS. Explanations on all answers.
 
 ## Constraint Document
 - **In scope:** Production exercises (existing types), FSRS scheduling, scenario-based learning, offline scene interface with accept-lists, AI evaluation as enhancement layer (GPT-4.1 via Vercel), casual + polite register training, voice I/O (scene mode — shipped), intro cards for new items
@@ -71,6 +75,10 @@ Surface: Kenya Hara design system, envisioning-information
 - Shipped (2026-03-20): intro cards for NEW phrases (scene drills) and NEW words (hiragana/katakana drills)
 - Shipped (2026-03-21): mobile UI fixes — input/check stacked vertically, voice recognition reliability on iOS, scene layout tightened
 - Kamae read (v4): anchor words identified as missing vocabulary layer between kana and scenarios. "You just need anchor words to get started talking."
+- TC1-TC4 (v4): All confirmed. Anchor Words mode shipped — 25 words, 3 exercise types, FSRS, intro cards + TTS, progression display.
+- Shipped (2026-03-21): voice recording reliability fix — session ID counter, instance cleanup, no-speech auto-retry
+- Shipped (2026-03-22): anchor word explanations on correct/incorrect + review log wired up
+- FEATURES.md generated for systematic design review
 
 ## Increment Plan (v2 — Action Mode)
 1. **Friend scenario content** — casual register phrases, accept-lists per exchange, FSRS items ✓
@@ -84,7 +92,10 @@ Surface: Kenya Hara design system, envisioning-information
 *Scoped (TC2 confirmed), deferred until after anchor words*
 
 ## Increment Plan (v4 — Anchor Words)
-*To be scoped — entering Scout*
+1. **Anchor word data + mode button** — 25 items, 4th mode tab, updateModeUI ✓
+2. **Exercise generation + session wiring** — generateAnchorDrill(), FSRS keys, startSession() ✓
+3. **Exercise render + setup** — 3 types + intro cards, accept-list matching, FSRS update ✓
+4. **Progression + polish** — lesson pulse, progression display, reinforcement, explanations ✓
 
 ## Taste Checkpoint Log
 1. (v1) Confirmed — forced production is the right problem
@@ -105,8 +116,8 @@ Surface: Kenya Hara design system, envisioning-information
 4. (v3) pending
 5. (v3) pending
 ---
-1. (v4) Pending — anchor words as missing vocabulary layer between kana and scenarios
-2. (v4) pending
-3. (v4) pending
-4. (v4) pending
+1. (v4) Confirmed — anchor words as missing vocabulary layer between kana and scenarios
+2. (v4) Confirmed — anchorDrill(anchor_word_item) → production_exercise + audio_model + FSRS_scheduling. 25 words, 3 types, accept-list eval.
+3. (v4) Confirmed — core feels right. Voice fix shipped alongside.
+4. (v4) Confirmed — function complete.
 5. (v4) pending
