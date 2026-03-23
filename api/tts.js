@@ -36,7 +36,8 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: 'tts-1',
         input: text,
-        voice: voice || 'nova',
+        voice: voice || 'fable',
+        speed: 0.85,
         response_format: 'mp3',
       }),
     });
