@@ -1,5 +1,5 @@
 ## Current Phase
-Polish (v4 — Anchor Words) — TC1 ✓, TC2 ✓, TC3 ✓, TC4 ✓, TC5 pending
+Polish (v4 — Anchor Words) — TC1 ✓, TC2 ✓, TC3 ✓, TC4 ✓, TC5 ✓ (shipped)
 
 ## Locked Scope
 `renshu(daily_open) → scenario_readiness → situated_production`
@@ -45,7 +45,7 @@ Fail loud. Small errors compound until heavy to carry. Every layer makes errors 
 
 ## Kill List
 Kill: Chat UI/bubbles, gamification/XP/levels, general AI tutor/sensei, pronunciation scoring, furigana toggle, multiple-choice
-Defer: AI-powered scene drills (Function 3 — scoped, build after anchor words), additional scenarios beyond friend, N4+ content, graded reading, export/import, pitch accent, Dynamic Yuki, progressive scaffolding, per-phrase speed memory
+Defer: AI-powered scene drills (Function 3 — scoped, build after anchor words), additional scenarios beyond friend, N4+ content, graded reading, export/import, pitch accent, Dynamic Yuki, progressive scaffolding, per-phrase speed memory, Korean mode, stroke tracing exercises
 Ego: (none identified)
 
 ## Deployment
@@ -79,6 +79,8 @@ Surface: Kenya Hara design system, envisioning-information
 - Shipped (2026-03-21): voice recording reliability fix — session ID counter, instance cleanup, no-speech auto-retry
 - Shipped (2026-03-22): anchor word explanations on correct/incorrect + review log wired up
 - FEATURES.md generated for systematic design review
+- Shipped (2026-03-22): enhanced character intros — stroke animation (KanjiVG), kanji origin stories, per-character cards for groups 1-9
+- Discussed: Korean mode (deferred — no user to design for), stroke tracing exercise (deferred — scope creep)
 
 ## Increment Plan (v2 — Action Mode)
 1. **Friend scenario content** — casual register phrases, accept-lists per exchange, FSRS items ✓
@@ -120,4 +122,4 @@ Surface: Kenya Hara design system, envisioning-information
 2. (v4) Confirmed — anchorDrill(anchor_word_item) → production_exercise + audio_model + FSRS_scheduling. 25 words, 3 types, accept-list eval.
 3. (v4) Confirmed — core feels right. Voice fix shipped alongside.
 4. (v4) Confirmed — function complete.
-5. (v4) pending
+5. (v4) Confirmed — shipped. Enhanced character intros added. Korean mode and stroke tracing deferred.
