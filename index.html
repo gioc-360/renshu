@@ -4571,19 +4571,35 @@ function setupAnchorExercise(ex) {
       reinforceQueue.push(ex);
     }
 
+    // Build explanation from anchor word data
+    // Look up the full anchor word for context
+    const anchorId = ex._anchorKey ? ex._anchorKey.replace('anchor_', '') : null;
+    const anchorWord = anchorId ? anchorWords.find(w => w.id === anchorId) : null;
+    const kana = ex.correct_display || ex.correct_kana || (anchorWord ? anchorWord.japanese : '');
+    const romaji = ex.correct_romaji || (anchorWord ? anchorWord.romaji : '');
+    const english = ex.english || (anchorWord ? anchorWord.english : '');
+    const context = ex.context || (anchorWord ? anchorWord.context : '');
+
+    let explanation;
+    if (ex.type === 'anchor_read') {
+      explanation = `${kana} (${romaji}) = "${english}". Use when: ${context}`;
+    } else {
+      explanation = `${kana} (${romaji}) = "${english}". Use when: ${context}`;
+    }
+
     // Reveal correct answer on wrong
     let revealHtml = '';
     if (!isCorrect) {
       if (ex.type === 'anchor_read') {
         revealHtml = `<div class="correct-answer-reveal">
           <p class="answer-label">correct answer</p>
-          <p class="answer-text" style="font-family:var(--font-en);">${escHtml(ex.correct_romaji)}</p>
+          <p class="answer-text" style="font-family:var(--font-en);">${escHtml(romaji)}</p>
         </div>`;
       } else {
         revealHtml = `<div class="correct-answer-reveal">
           <p class="answer-label">correct answer</p>
-          <p class="answer-text">${escHtml(ex.correct_display || ex.correct_kana)}</p>
-          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.correct_kana)} (${escHtml(ex.correct_romaji)})</p>
+          <p class="answer-text">${escHtml(kana)}</p>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(romaji)}</p>
         </div>`;
       }
     }
@@ -4591,6 +4607,13 @@ function setupAnchorExercise(ex) {
     const slot = exerciseCard.querySelector('#explanation-slot');
     if (slot) slot.innerHTML = revealHtml;
 
+    // Build exercise object for showExplanation (review log + inline explanation)
+    const explEx = {
+      japanese: kana,
+      romaji: romaji,
+    };
+    const correctAnswer = isCorrect ? null : (ex.type === 'anchor_read' ? romaji : kana);
+    showExplanation(isCorrect, explanation, correctAnswer, explEx);
     showNextButton(isCorrect, isFast);
   }
 
