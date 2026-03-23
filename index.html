@@ -6330,13 +6330,18 @@ function listenForSpeech() {
       resolveOnce(finalTranscript || input.value || null);
     };
 
-    try {
-      rec.start();
-    } catch (e) {
-      cleanup();
-      resolve(null);
-      sceneListenResolve = null;
-    }
+    // On iOS, delay start to let the browser fully release the mic from any previous session
+    const startDelay = isMobile ? 300 : 0;
+    setTimeout(() => {
+      if (sessionId !== listenSessionId) { cleanup(); return; }
+      try {
+        rec.start();
+      } catch (e) {
+        cleanup();
+        resolve(null);
+        sceneListenResolve = null;
+      }
+    }, startDelay);
   });
 }
 
