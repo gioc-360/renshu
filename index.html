@@ -6223,41 +6223,43 @@ function browserTTSFallback(text) {
   });
 }
 
+let recognitionInstance = null;
 let sceneListening = false;
 let sceneListenResolve = null;
 let listenSessionId = 0;
-// Single persistent instance — iOS breaks when you create multiple SpeechRecognition objects
-let sharedRecognition = null;
 const isMobileSpeech = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-function getSharedRecognition() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  if (!sharedRecognition) {
-    sharedRecognition = new SR();
-    sharedRecognition.lang = 'ja-JP';
-    sharedRecognition.interimResults = true;
-    sharedRecognition.maxAlternatives = 3;
-    sharedRecognition.continuous = !isMobileSpeech;
-  }
-  return sharedRecognition;
-}
 
 function listenForSpeech() {
   return new Promise((resolve) => {
-    const rec = getSharedRecognition();
-    if (!rec) { resolve(null); return; }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { resolve(null); return; }
 
     const mic = document.getElementById('scene-mic');
     const input = document.getElementById('scene-input');
 
     // Toggle off — stop and return what we have
-    if (sceneListening) {
-      try { rec.stop(); } catch (e) {}
-      return; // onend handler will resolve via sceneListenResolve
+    if (sceneListening && recognitionInstance) {
+      try { recognitionInstance.stop(); } catch (e) {}
+      return;
+    }
+
+    // Kill any previous instance
+    if (recognitionInstance) {
+      try { recognitionInstance.stop(); } catch (e) {}
+      recognitionInstance.onresult = null;
+      recognitionInstance.onerror = null;
+      recognitionInstance.onend = null;
+      recognitionInstance = null;
     }
 
     const sessionId = ++listenSessionId;
+    const rec = new SpeechRecognition();
+    recognitionInstance = rec;
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.maxAlternatives = 3;
+    rec.continuous = !isMobileSpeech;
+
     sceneListening = true;
     sceneListenResolve = resolve;
     mic.classList.add('mic-listening');
@@ -6277,9 +6279,12 @@ function listenForSpeech() {
       clearInterval(safetyTimer);
       sceneListening = false;
       mic.classList.remove('mic-listening');
-      rec.onresult = null;
-      rec.onerror = null;
-      rec.onend = null;
+      if (recognitionInstance === rec) {
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        recognitionInstance = null;
+      }
     }
 
     function resolveOnce(value) {
@@ -6337,11 +6342,12 @@ function listenForSpeech() {
 function stopListening() {
   listenSessionId++;
   sceneListening = false;
-  if (sharedRecognition) {
-    try { sharedRecognition.stop(); } catch (e) {}
-    sharedRecognition.onresult = null;
-    sharedRecognition.onerror = null;
-    sharedRecognition.onend = null;
+  if (recognitionInstance) {
+    try { recognitionInstance.stop(); } catch (e) {}
+    recognitionInstance.onresult = null;
+    recognitionInstance.onerror = null;
+    recognitionInstance.onend = null;
+    recognitionInstance = null;
   }
   const mic = document.getElementById('scene-mic');
   if (mic) mic.classList.remove('mic-listening');
