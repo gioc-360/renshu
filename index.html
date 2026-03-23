@@ -4502,9 +4502,9 @@ function setupSceneIntro(ex) {
   btnAction.classList.add('btn-next-state');
   btnAction.disabled = false;
   // Play TTS after short delay
-  setTimeout(() => speakJapanese(ex.japanese), 300);
+  setTimeout(() => playYukiLine(ex.japanese), 300);
   const replayBtn = exerciseCard.querySelector('#btn-replay-intro');
-  if (replayBtn) replayBtn.addEventListener('click', () => speakJapanese(ex.japanese));
+  if (replayBtn) replayBtn.addEventListener('click', () => playYukiLine(ex.japanese));
 }
 
 // ── Character Intro (stroke animation + origin story) ──
@@ -4635,9 +4635,9 @@ function setupAnchorIntro(ex) {
   btnAction.classList.remove('btn-skip-state');
   btnAction.classList.add('btn-next-state');
   btnAction.disabled = false;
-  setTimeout(() => speakJapanese(ex.japanese), 300);
+  setTimeout(() => playYukiLine(ex.japanese), 300);
   const replayBtn = exerciseCard.querySelector('#btn-replay-intro');
-  if (replayBtn) replayBtn.addEventListener('click', () => speakJapanese(ex.japanese));
+  if (replayBtn) replayBtn.addEventListener('click', () => playYukiLine(ex.japanese));
 }
 
 // ── Anchor Context → Produce ──────────────────────
