@@ -3630,7 +3630,14 @@ function renderAnchorProgression(section) {
 
 function renderConjugationProgression(section) {
   const fsrsState = loadFSRSState();
-  const availableForms = Object.values(conjugationDrills);
+  const history = loadSkillHistory();
+  const lessonIdx = history.currentLesson || 0;
+  const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
+  const lessonNum = parseInt(lessonId.replace('L', ''));
+
+  const availableForms = Object.values(conjugationDrills).filter(f => {
+    return parseInt(f.lesson.replace('L', '')) <= lessonNum;
+  });
 
   let totalVerbs = 0;
   let learned = 0;
@@ -3803,7 +3810,13 @@ function renderLessonPulse() {
     }
     el.innerHTML = html;
   } else if (currentMode === 'production' && productionSub === 'conjugation') {
-    const availableForms = Object.values(conjugationDrills);
+    const history = loadSkillHistory();
+    const lessonIdx = history.currentLesson || 0;
+    const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
+    const lessonNum = parseInt(lessonId.replace('L', ''));
+    const availableForms = Object.values(conjugationDrills).filter(f =>
+      parseInt(f.lesson.replace('L', '')) <= lessonNum
+    );
     let html = '';
     for (const form of availableForms) {
       for (const group of form.groups) {
@@ -4080,7 +4093,14 @@ function generateAnchorDrill() {
 }
 
 function generateConjugationSession() {
-  const availableForms = Object.values(conjugationDrills);
+  const history = loadSkillHistory();
+  const lessonIdx = history.currentLesson || 0;
+  const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
+  const lessonNum = parseInt(lessonId.replace('L', ''));
+
+  const availableForms = Object.values(conjugationDrills).filter(f => {
+    return parseInt(f.lesson.replace('L', '')) <= lessonNum;
+  });
   if (availableForms.length === 0) return [];
 
   const fsrsState = loadFSRSState();
