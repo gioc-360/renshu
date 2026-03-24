@@ -1,83 +1,35 @@
 /**
- * Conjugation Drill Data
+ * Conjugation Drill Data — Tae Kim approach
  *
- * Verb conjugation exercises organized by pattern groups.
- * Each group introduces one conjugation form with verbs grouped
- * by conjugation pattern (ru-verbs together, then u-verbs by consonant).
+ * Sequence follows Tae Kim's Guide to Japanese Grammar:
+ * plain forms first (negative, past), then polite (ます), then
+ * te-form as the gateway, then derived forms.
  *
- * The scaffolding system uses the first verb in each pattern as
- * the worked example shown at the top of the card.
+ * The first form (ない) also teaches verb classification (ru vs u)
+ * since that's the prerequisite for everything.
+ *
+ * Each form has:
+ *   explanation — Tae Kim-style teaching text for the intro card
+ *   tip        — one key insight to remember
  *
  * Verb types:
- *   ru  — ichidan (る-verbs): drop る, apply ending
- *   u   — godan (う-verbs): consonant-specific rules
+ *   ru  — ichidan: ends in る with vowel before it
+ *   u   — godan: everything else (including る-ending exceptions)
  *   irr — irregular (する, くる)
- *
- * Each verb has:
- *   dictionary  — dictionary form (plain present affirmative)
- *   type        — ru / u / irr
- *   masu        — ます form (for reference, already in n5-content)
- *   forms       — object mapping form names to correct conjugations
- *   english     — meaning
- *   lesson      — which Genki lesson introduces this verb
  */
 
 const conjugationDrills = {
   // ═══════════════════════════════════════════════════════
-  // FORM: masu (polite present) — L3
-  // Rule: ru-verbs drop る add ます; u-verbs change final u→i add ます
-  // ═══════════════════════════════════════════════════════
-  masu: {
-    id: 'masu',
-    name: 'ます form',
-    lesson: 'L3',
-    hint: 'Polite present form',
-    groups: [
-      {
-        pattern: 'ru-verb',
-        rule: 'drop る → ます',
-        verbs: [
-          { dictionary: 'たべる', form: 'たべます', english: 'to eat', type: 'ru' },
-          { dictionary: 'みる', form: 'みます', english: 'to see', type: 'ru' },
-          { dictionary: 'ねる', form: 'ねます', english: 'to sleep', type: 'ru' },
-          { dictionary: 'おきる', form: 'おきます', english: 'to get up', type: 'ru' },
-          { dictionary: 'でる', form: 'でます', english: 'to exit', type: 'ru' },
-        ],
-      },
-      {
-        pattern: 'u-verb',
-        rule: 'う→い + ます',
-        verbs: [
-          { dictionary: 'のむ', form: 'のみます', english: 'to drink', type: 'u' },
-          { dictionary: 'いく', form: 'いきます', english: 'to go', type: 'u' },
-          { dictionary: 'かえる', form: 'かえります', english: 'to return', type: 'u' },
-          { dictionary: 'よむ', form: 'よみます', english: 'to read', type: 'u' },
-          { dictionary: 'きく', form: 'ききます', english: 'to listen', type: 'u' },
-          { dictionary: 'かく', form: 'かきます', english: 'to write', type: 'u' },
-          { dictionary: 'はなす', form: 'はなします', english: 'to speak', type: 'u' },
-          { dictionary: 'あそぶ', form: 'あそびます', english: 'to play', type: 'u' },
-        ],
-      },
-      {
-        pattern: 'irregular',
-        rule: 'memorize',
-        verbs: [
-          { dictionary: 'する', form: 'します', english: 'to do', type: 'irr' },
-          { dictionary: 'くる', form: 'きます', english: 'to come', type: 'irr' },
-        ],
-      },
-    ],
-  },
-
-  // ═══════════════════════════════════════════════════════
-  // FORM: negative (plain present negative) — L3
-  // Rule: ru-verbs drop る add ない; u-verbs change う→あ add ない
+  // 1. NEGATIVE (ない) — the first conjugation you learn
+  // Teaches verb classification as a side effect
   // ═══════════════════════════════════════════════════════
   negative: {
     id: 'negative',
     name: 'ない form',
     lesson: 'L3',
-    hint: 'Plain negative',
+    hint: 'Plain negative — "don\'t / doesn\'t"',
+    explanation: 'Before you conjugate anything, you need to classify verbs. There are only two types: ru-verbs end in る with a vowel sound before it (たべる, みる). Everything else is a u-verb (のむ, いく, はなす). There are only two irregular verbs in the entire language: する and くる. That\'s it. Once you can classify, the negative is simple: ru-verbs drop る and add ない. U-verbs shift the final う-sound to あ-sound and add ない.',
+    tip: 'Classify first, then conjugate. ru-verb = drop る. u-verb = shift to あ-row.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -92,7 +44,7 @@ const conjugationDrills = {
       },
       {
         pattern: 'u-verb',
-        rule: 'う→あ + ない',
+        rule: 'う-sound → あ-sound + ない',
         verbs: [
           { dictionary: 'のむ', form: 'のまない', english: 'to drink', type: 'u' },
           { dictionary: 'いく', form: 'いかない', english: 'to go', type: 'u' },
@@ -107,25 +59,26 @@ const conjugationDrills = {
       },
       {
         pattern: 'irregular',
-        rule: 'memorize',
+        rule: 'just memorize these two (+ ある)',
         verbs: [
           { dictionary: 'する', form: 'しない', english: 'to do', type: 'irr' },
           { dictionary: 'くる', form: 'こない', english: 'to come', type: 'irr' },
-          { dictionary: 'ある', form: 'ない', english: 'to exist (inanimate)', type: 'irr' },
+          { dictionary: 'ある', form: 'ない', english: 'to exist', type: 'irr' },
         ],
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: past (plain past affirmative) — L4
-  // Same sound changes as te-form but with た/だ instead of て/で
+  // 2. PAST (た/だ) — plain past, introduces consonant groups
   // ═══════════════════════════════════════════════════════
   past: {
     id: 'past',
     name: 'た form',
     lesson: 'L4',
-    hint: 'Plain past',
+    hint: 'Plain past — "did"',
+    explanation: 'The past tense is where u-verbs get interesting. Ru-verbs are still simple: drop る, add た. But u-verbs split into consonant groups — the last kana determines what happens. This is the first time you see these groups, and they\'ll come back in て-form with the exact same pattern. Learn them here and て-form is free.',
+    tip: 'む/ぶ/ぬ → んだ, く → いた, ぐ → いだ, す → した, つ/る/う → った. Same groups for て-form.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -186,22 +139,70 @@ const conjugationDrills = {
         verbs: [
           { dictionary: 'する', form: 'した', english: 'to do', type: 'irr' },
           { dictionary: 'くる', form: 'きた', english: 'to come', type: 'irr' },
-          { dictionary: 'いく', form: 'いった', english: 'to go', type: 'irr' },
+          { dictionary: 'いく', form: 'いった', english: 'to go (exception!)', type: 'irr' },
         ],
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: te-form — L6
-  // The most important conjugation form. Same sound changes as past
-  // but with て/で instead of た/だ.
+  // 3. MASU (polite present) — the polite wrapper
+  // ═══════════════════════════════════════════════════════
+  masu: {
+    id: 'masu',
+    name: 'ます form',
+    lesson: 'L3',
+    hint: 'Polite present — used with strangers, at work, in class',
+    explanation: 'The ます form is just a politeness wrapper around the verb stem. It doesn\'t change the meaning — it changes the social register. You\'ll use this with anyone you\'re not close to. The conjugation is simple: ru-verbs drop る, u-verbs shift the final う-sound to い-sound. Then add ます. You already know how to classify verbs from ない form — same skill applies here.',
+    tip: 'Same stem logic as ない, but shift to い-row instead of あ-row.',
+    groups: [
+      {
+        pattern: 'ru-verb',
+        rule: 'drop る → ます',
+        verbs: [
+          { dictionary: 'たべる', form: 'たべます', english: 'to eat', type: 'ru' },
+          { dictionary: 'みる', form: 'みます', english: 'to see', type: 'ru' },
+          { dictionary: 'ねる', form: 'ねます', english: 'to sleep', type: 'ru' },
+          { dictionary: 'おきる', form: 'おきます', english: 'to get up', type: 'ru' },
+          { dictionary: 'でる', form: 'でます', english: 'to exit', type: 'ru' },
+        ],
+      },
+      {
+        pattern: 'u-verb',
+        rule: 'う-sound → い-sound + ます',
+        verbs: [
+          { dictionary: 'のむ', form: 'のみます', english: 'to drink', type: 'u' },
+          { dictionary: 'いく', form: 'いきます', english: 'to go', type: 'u' },
+          { dictionary: 'かえる', form: 'かえります', english: 'to return', type: 'u' },
+          { dictionary: 'よむ', form: 'よみます', english: 'to read', type: 'u' },
+          { dictionary: 'きく', form: 'ききます', english: 'to listen', type: 'u' },
+          { dictionary: 'かく', form: 'かきます', english: 'to write', type: 'u' },
+          { dictionary: 'はなす', form: 'はなします', english: 'to speak', type: 'u' },
+          { dictionary: 'あそぶ', form: 'あそびます', english: 'to play', type: 'u' },
+        ],
+      },
+      {
+        pattern: 'irregular',
+        rule: 'memorize',
+        verbs: [
+          { dictionary: 'する', form: 'します', english: 'to do', type: 'irr' },
+          { dictionary: 'くる', form: 'きます', english: 'to come', type: 'irr' },
+        ],
+      },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════
+  // 4. TE-FORM (て/で) — the gateway conjugation
+  // Same consonant groups as た-form, just て/で instead of た/だ
   // ═══════════════════════════════════════════════════════
   te: {
     id: 'te',
     name: 'て form',
     lesson: 'L6',
-    hint: 'Conjunctive form',
+    hint: 'Connects actions, makes requests, builds grammar',
+    explanation: 'The て-form is the most important conjugation in Japanese. It\'s used to chain actions ("I ate and left"), make requests ("please eat"), build progressive ("is eating"), and dozens more patterns. The good news: if you learned た-form, you already know this. The consonant groups are identical — just replace た with て, and だ with で. That\'s it.',
+    tip: 'Exact same consonant rules as た-form. た→て, だ→で. You already know this.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -269,20 +270,23 @@ const conjugationDrills = {
         verbs: [
           { dictionary: 'する', form: 'して', english: 'to do', type: 'irr' },
           { dictionary: 'くる', form: 'きて', english: 'to come', type: 'irr' },
-          { dictionary: 'いく', form: 'いって', english: 'to go', type: 'irr' },
+          { dictionary: 'いく', form: 'いって', english: 'to go (exception!)', type: 'irr' },
         ],
       },
     ],
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: te-iru (progressive / resultant state) — L7
+  // 5. TE-IRU (progressive / resultant state)
+  // Builds directly on て-form
   // ═══════════════════════════════════════════════════════
   teiru: {
     id: 'teiru',
     name: 'ている form',
     lesson: 'L7',
-    hint: 'Progressive / ongoing state',
+    hint: '"is doing" or "has done" — ongoing actions and states',
+    explanation: 'て-form + いる describes something ongoing or a resulting state. "たべている" can mean "is eating" (action in progress) or "has eaten" (result). Which meaning depends on the verb — action verbs are progressive, state-change verbs are resultant. The conjugation is mechanical: just make the て-form and add いる. If you know て-form, this is free.',
+    tip: 'Just て-form + いる. The hard part is て-form — you already drilled that.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -318,14 +322,16 @@ const conjugationDrills = {
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: short form negative past — L8
-  // dictionary → なかった
+  // 6. NEGATIVE PAST (なかった)
+  // Built on ない — just conjugate ない like an i-adjective
   // ═══════════════════════════════════════════════════════
   negativePast: {
     id: 'negativePast',
     name: 'なかった form',
     lesson: 'L8',
-    hint: 'Plain negative past',
+    hint: '"didn\'t" — plain negative past',
+    explanation: 'Here\'s a secret: ない conjugates exactly like an い-adjective. To make it past tense, drop the い and add かった — just like あつい → あつかった. So the negative past of any verb is: make the ない form, then ない → なかった. Two steps you already know, chained together.',
+    tip: 'ない behaves like an い-adjective. ない → なかった, same as あつい → あつかった.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -358,13 +364,16 @@ const conjugationDrills = {
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: tai (want to ~) — L11
+  // 7. TAI (want to ~)
+  // Uses the same stem as ます
   // ═══════════════════════════════════════════════════════
   tai: {
     id: 'tai',
     name: 'たい form',
     lesson: 'L11',
-    hint: 'Want to ~',
+    hint: '"want to ~" — expresses your desire to do something',
+    explanation: 'たい attaches to the same verb stem as ます — ru-verbs drop る, u-verbs shift to い-sound. Then add たい instead of ます. The result conjugates like an い-adjective: たべたくない (don\'t want to eat), たべたかった (wanted to eat). Note: たい only expresses YOUR desire. For someone else\'s desires, you need different grammar.',
+    tip: 'Same stem as ます form, but add たい. Result behaves like an い-adjective.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -377,7 +386,7 @@ const conjugationDrills = {
       },
       {
         pattern: 'u-verb',
-        rule: 'う→い + たい',
+        rule: 'う-sound → い-sound + たい',
         verbs: [
           { dictionary: 'のむ', form: 'のみたい', english: 'to drink', type: 'u' },
           { dictionary: 'いく', form: 'いきたい', english: 'to go', type: 'u' },
@@ -398,13 +407,15 @@ const conjugationDrills = {
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: potential (can ~) — L10
+  // 8. POTENTIAL (can ~)
   // ═══════════════════════════════════════════════════════
   potential: {
     id: 'potential',
     name: 'Potential form',
     lesson: 'L10',
-    hint: 'Can ~',
+    hint: '"can do ~" — expressing ability',
+    explanation: 'The potential form expresses ability. Ru-verbs drop る and add られる. U-verbs shift the final う-sound to え-sound and add る — the result is actually a ru-verb, which makes further conjugation easy. する becomes できる (a completely different word). Note: in casual speech, ru-verb られる is often shortened to れる (たべれる), called "ra-nuki."',
+    tip: 'ru-verb: drop る → られる. u-verb: shift to え-row + る. する → できる.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -418,7 +429,7 @@ const conjugationDrills = {
       },
       {
         pattern: 'u-verb',
-        rule: 'う→え + る',
+        rule: 'う-sound → え-sound + る',
         verbs: [
           { dictionary: 'のむ', form: 'のめる', english: 'to drink', type: 'u' },
           { dictionary: 'いく', form: 'いける', english: 'to go', type: 'u' },
@@ -441,13 +452,15 @@ const conjugationDrills = {
   },
 
   // ═══════════════════════════════════════════════════════
-  // FORM: volitional (let's ~) — L10
+  // 9. VOLITIONAL (let's ~ / shall we ~)
   // ═══════════════════════════════════════════════════════
   volitional: {
     id: 'volitional',
     name: 'よう form',
     lesson: 'L10',
-    hint: "Let's ~",
+    hint: '"let\'s ~" — suggesting or expressing intent',
+    explanation: 'The volitional form expresses intent or suggestion — "let\'s eat," "shall we go?" Ru-verbs drop る and add よう. U-verbs shift the final う-sound to お-sound and add う. This is the casual equivalent of ましょう. You can also use it with と思う to express something you\'re thinking of doing: たべようと思う ("I\'m thinking of eating").',
+    tip: 'ru-verb: drop る → よう. u-verb: shift to お-row + う. Casual version of ましょう.',
     groups: [
       {
         pattern: 'ru-verb',
@@ -460,7 +473,7 @@ const conjugationDrills = {
       },
       {
         pattern: 'u-verb',
-        rule: 'う→おう',
+        rule: 'う-sound → お-sound + う',
         verbs: [
           { dictionary: 'のむ', form: 'のもう', english: 'to drink', type: 'u' },
           { dictionary: 'いく', form: 'いこう', english: 'to go', type: 'u' },

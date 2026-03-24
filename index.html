@@ -4176,6 +4176,8 @@ function generateConjugationSession() {
       type: 'conj_intro',
       formName: form.name,
       formHint: form.hint,
+      formExplanation: form.explanation || '',
+      formTip: form.tip || '',
       formId: form.id,
       groups: form.groups.map(g => ({
         pattern: g.pattern,
@@ -6039,24 +6041,38 @@ function renderConjIntro(ex) {
   let rulesHtml = '';
   for (const g of ex.groups) {
     rulesHtml += `
-      <div style="margin-bottom:0.75rem;">
-        <p style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.25rem;">${escHtml(g.pattern)}</p>
-        <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:0.2rem;">${escHtml(g.rule)}</p>
-        <p style="font-family:var(--font-jp); font-size:1rem;">
+      <div style="margin-bottom:0.6rem;">
+        <p style="font-size:0.7rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.15rem;">${escHtml(g.pattern)}</p>
+        <p style="font-family:var(--font-jp); font-size:0.95rem;">
           <span style="color:var(--color-text-muted);">${escHtml(g.example.dictionary)}</span>
-          <span style="margin:0 0.4rem; color:var(--color-text-muted);">→</span>
+          <span style="margin:0 0.3rem; color:var(--color-text-muted);">→</span>
           <span style="color:var(--color-text);">${escHtml(g.example.form)}</span>
-          <span style="font-size:0.8rem; color:var(--color-text-muted); margin-left:0.4rem;">${escHtml(g.example.english)}</span>
+          <span style="font-size:0.75rem; color:var(--color-text-muted); margin-left:0.3rem;">(${escHtml(g.rule)})</span>
         </p>
       </div>`;
   }
+
+  const explanationHtml = ex.formExplanation
+    ? `<p style="font-size:0.8rem; color:var(--color-text-secondary); line-height:1.6; margin-bottom:1rem; text-align:left;">${escHtml(ex.formExplanation)}</p>`
+    : '';
+
+  const tipHtml = ex.formTip
+    ? `<div style="border-left:2px solid var(--color-text-muted); padding-left:0.75rem; margin-bottom:1rem; text-align:left;">
+        <p style="font-size:0.75rem; color:var(--color-text-muted); margin-bottom:0.15rem;">KEY INSIGHT</p>
+        <p style="font-size:0.8rem; color:var(--color-text);">${escHtml(ex.formTip)}</p>
+      </div>`
+    : '';
+
   return `
     <div class="exercise-prompt" style="text-align:center;">
-      <p style="font-size:0.7rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem;">Conjugation Form</p>
-      <p class="japanese-text" style="font-size:2rem; margin-bottom:0.25rem;">${escHtml(ex.formName)}</p>
-      <p style="font-size:1rem; color:var(--color-text-secondary); margin-bottom:1.25rem;">${escHtml(ex.formHint)}</p>
-      <div style="text-align:left; max-width:280px; margin:0 auto;">
-        ${rulesHtml}
+      <p class="japanese-text" style="font-size:2rem; margin-bottom:0.15rem;">${escHtml(ex.formName)}</p>
+      <p style="font-size:0.9rem; color:var(--color-text-secondary); margin-bottom:1rem;">${escHtml(ex.formHint)}</p>
+      <div style="max-width:320px; margin:0 auto;">
+        ${explanationHtml}
+        ${tipHtml}
+        <div style="text-align:left;">
+          ${rulesHtml}
+        </div>
       </div>
     </div>
     <div id="explanation-slot"></div>
