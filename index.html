@@ -518,6 +518,27 @@
       line-height: 1.5;
     }
 
+    .production-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .production-tab {
+      background: none;
+      border: none;
+      font-family: var(--font-en);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      padding: 0.2rem 0;
+      cursor: pointer;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .production-tab.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-text);
+    }
+
     .lesson-pulse {
       margin-top: 1.5rem;
       font-family: var(--font-jp);
@@ -1979,9 +2000,12 @@
           <div class="scenario-title" id="scenario-title"></div>
           <div class="scenario-setting" id="scenario-setting"></div>
         </div>
-        <div class="scenario-card hidden" id="anchor-card">
-          <div class="scenario-title">Anchor Words</div>
-          <div class="scenario-setting">25 words that keep you in any conversation</div>
+        <div class="scenario-card hidden" id="production-card">
+          <div class="production-tabs">
+            <button class="production-tab active" data-sub="anchor">Anchor Words</button>
+            <button class="production-tab" data-sub="conjugation">Conjugation</button>
+          </div>
+          <div class="scenario-setting" id="production-description">25 words that keep you in any conversation</div>
         </div>
       </div>
       <div class="start-actions" id="start-actions">
@@ -1995,7 +2019,7 @@
     <div class="mode-selector" id="mode-selector">
       <button id="btn-mode-learn" onclick="window.__setMode('learn')">Hiragana</button>
       <button id="btn-mode-learn-katakana" onclick="window.__setMode('learn-katakana')">Katakana</button>
-      <button id="btn-mode-anchor" onclick="window.__setMode('anchor')">Anchor</button>
+      <button id="btn-mode-production" onclick="window.__setMode('production')">Production</button>
       <button id="btn-mode-action" class="active" onclick="window.__setMode('action')">Action</button>
     </div>
 
@@ -2967,7 +2991,8 @@ let exercises = [];       // array of exercises for the current session
 let answered = false;     // whether the current exercise has been answered
 let sessionResults = [];  // array of { type, correct } for each answered exercise
 let reinforceQueue = [];  // wrong items to reinforce later in session
-let currentMode = 'action'; // 'action', 'learn', or 'learn-katakana'
+let currentMode = 'action'; // 'action', 'learn', 'learn-katakana', or 'production'
+let productionSub = 'anchor'; // 'anchor' or 'conjugation'
 let drillFromScene = false; // true when drill was launched from scene results
 let kanaContinueSession = false; // true after first kana session — skips intro, FSRS-prioritized
 
@@ -3440,8 +3465,12 @@ function renderProgressionSection() {
     return;
   }
 
-  if (currentMode === 'anchor') {
-    renderAnchorProgression(section);
+  if (currentMode === 'production') {
+    if (productionSub === 'anchor') {
+      renderAnchorProgression(section);
+    } else {
+      renderConjugationProgression(section);
+    }
     return;
   }
 
@@ -3599,6 +3628,53 @@ function renderAnchorProgression(section) {
   }
 }
 
+function renderConjugationProgression(section) {
+  const fsrsState = loadFSRSState();
+  const history = loadSkillHistory();
+  const lessonIdx = history.currentLesson || 0;
+  const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
+  const lessonNum = parseInt(lessonId.replace('L', ''));
+
+  const availableForms = Object.values(conjugationDrills).filter(f => {
+    return parseInt(f.lesson.replace('L', '')) <= lessonNum;
+  });
+
+  let totalVerbs = 0;
+  let learned = 0;
+  for (const form of availableForms) {
+    for (const group of form.groups) {
+      for (const verb of group.verbs) {
+        totalVerbs++;
+        const key = `conj_${form.id}_${verb.dictionary}`;
+        const card = fsrsState[key];
+        if (card && card.state !== NEW && (card.reps || 0) >= 3) learned++;
+      }
+    }
+  }
+
+  const pct = totalVerbs > 0 ? Math.round((learned / totalVerbs) * 100) : 0;
+
+  section.innerHTML = `
+    <div class="progression-card">
+      <h4>Conjugation</h4>
+      <div class="progression-item">
+        <div class="progression-label">
+          <span class="prog-name">${availableForms.length} forms unlocked</span>
+          <span class="prog-count">${learned} / ${totalVerbs} drilled</span>
+        </div>
+        <div class="progression-bar">
+          <div class="progression-bar-fill" style="width: ${pct}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const indicator = $('#lesson-indicator');
+  if (indicator) {
+    indicator.textContent = `Conjugation \u2014 ${learned}/${totalVerbs} drilled`;
+  }
+}
+
 function renderLessonSelector() {
   const select = document.getElementById('lesson-select');
   if (!select) return;
@@ -3657,7 +3733,7 @@ function renderScenarioCard() {
   if (currentMode === 'action') {
     btnBegin.textContent = 'drill';
     btnScene.classList.remove('hidden');
-  } else if (currentMode === 'anchor') {
+  } else if (currentMode === 'production') {
     btnBegin.textContent = 'begin';
     btnScene.classList.add('hidden');
   } else {
@@ -3718,7 +3794,7 @@ function renderLessonPulse() {
       html += `<span style="opacity:${opacity.toFixed(2)}">${p.japanese}</span>`;
     }
     el.innerHTML = html;
-  } else if (currentMode === 'anchor') {
+  } else if (currentMode === 'production' && productionSub === 'anchor') {
     let html = '';
     for (const w of anchorWords) {
       const key = `anchor_${w.id}`;
@@ -3731,6 +3807,32 @@ function renderLessonPulse() {
         opacity = 0.2 + 0.8 * r;
       }
       html += `<span style="opacity:${opacity.toFixed(2)}">${w.japanese}</span>`;
+    }
+    el.innerHTML = html;
+  } else if (currentMode === 'production' && productionSub === 'conjugation') {
+    const history = loadSkillHistory();
+    const lessonIdx = history.currentLesson || 0;
+    const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
+    const lessonNum = parseInt(lessonId.replace('L', ''));
+    const availableForms = Object.values(conjugationDrills).filter(f =>
+      parseInt(f.lesson.replace('L', '')) <= lessonNum
+    );
+    let html = '';
+    for (const form of availableForms) {
+      for (const group of form.groups) {
+        for (const verb of group.verbs) {
+          const key = `conj_${form.id}_${verb.dictionary}`;
+          const card = fsrsState[key];
+          let opacity;
+          if (!card || card.state === NEW) {
+            opacity = 0.2;
+          } else {
+            const r = retrievability(card);
+            opacity = 0.2 + 0.8 * r;
+          }
+          html += `<span style="opacity:${opacity.toFixed(2)}">${verb.dictionary}</span>`;
+        }
+      }
     }
     el.innerHTML = html;
   }
@@ -3748,32 +3850,54 @@ window.__setMode = function(mode) {
 function updateModeUI() {
   const btnLearn = $('#btn-mode-learn');
   const btnLearnKatakana = $('#btn-mode-learn-katakana');
-  const btnAnchor = $('#btn-mode-anchor');
+  const btnProduction = $('#btn-mode-production');
   const btnAction = $('#btn-mode-action');
   const lessonSelect = $('#lesson-select');
   const groupSelect = $('#group-select');
   const scenarioCard = $('#scenario-card');
-  const anchorCard = $('#anchor-card');
+  const productionCard = $('#production-card');
 
   btnLearn.classList.toggle('active', currentMode === 'learn');
   btnLearnKatakana.classList.toggle('active', currentMode === 'learn-katakana');
-  btnAnchor.classList.toggle('active', currentMode === 'anchor');
+  btnProduction.classList.toggle('active', currentMode === 'production');
   btnAction.classList.toggle('active', currentMode === 'action');
 
   // Toggle which selector shows on front page
   lessonSelect.classList.add('hidden');
   groupSelect.classList.add('hidden');
   if (scenarioCard) scenarioCard.classList.add('hidden');
-  if (anchorCard) anchorCard.classList.add('hidden');
+  if (productionCard) productionCard.classList.add('hidden');
 
   if (currentMode === 'learn' || currentMode === 'learn-katakana') {
     groupSelect.classList.remove('hidden');
-  } else if (currentMode === 'anchor') {
-    if (anchorCard) anchorCard.classList.remove('hidden');
+  } else if (currentMode === 'production') {
+    if (productionCard) productionCard.classList.remove('hidden');
+    updateProductionTabs();
   } else if (currentMode === 'action') {
     if (scenarioCard) scenarioCard.classList.remove('hidden');
   }
 }
+
+function updateProductionTabs() {
+  const tabs = document.querySelectorAll('.production-tab');
+  const desc = document.getElementById('production-description');
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.sub === productionSub));
+  if (desc) {
+    desc.textContent = productionSub === 'anchor'
+      ? '25 words that keep you in any conversation'
+      : 'type the conjugated form from memory';
+  }
+}
+
+// Production tab click handler
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('production-tab')) {
+    productionSub = e.target.dataset.sub;
+    updateProductionTabs();
+    renderProgressionSection();
+    renderLessonPulse();
+  }
+});
 
 function renderGroupSelector() {
   const select = document.getElementById('group-select');
@@ -3815,8 +3939,12 @@ async function startSession() {
     const groups = isKatakana ? katakanaGroups : hiraganaGroups;
     const pairs = isKatakana ? katakanaConfusablePairs : confusablePairs;
     exercises = generateLearningSession(groupIdx, groups, pairs);
-  } else if (currentMode === 'anchor') {
-    exercises = generateAnchorDrill();
+  } else if (currentMode === 'production') {
+    if (productionSub === 'anchor') {
+      exercises = generateAnchorDrill();
+    } else {
+      exercises = generateConjugationSession();
+    }
   } else if (currentMode === 'action') {
     exercises = generateScenarioDrill(scenarios[0]);
   } else {
@@ -3962,6 +4090,79 @@ function generateAnchorDrill() {
   }
 
   return [...introExercises, ...drillExercises];
+}
+
+function generateConjugationSession() {
+  const history = loadSkillHistory();
+  const lessonIdx = history.currentLesson || 0;
+  const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
+  const lessonNum = parseInt(lessonId.replace('L', ''));
+
+  const availableForms = Object.values(conjugationDrills).filter(f => {
+    return parseInt(f.lesson.replace('L', '')) <= lessonNum;
+  });
+  if (availableForms.length === 0) return [];
+
+  const fsrsState = loadFSRSState();
+  const drills = [];
+
+  // Collect all verb×form combos with FSRS priority
+  const candidates = [];
+  for (const form of availableForms) {
+    for (const group of form.groups) {
+      for (let vi = 0; vi < group.verbs.length; vi++) {
+        const verb = group.verbs[vi];
+        const fsrsKey = `conj_${form.id}_${verb.dictionary}`;
+        if (!fsrsState[fsrsKey]) {
+          fsrsState[fsrsKey] = createCard(fsrsKey, 'conjugation');
+        }
+        const card = fsrsState[fsrsKey];
+        const example = group.verbs[0];
+        const showExample = !card || card.state === NEW || (card.reps || 0) < 3;
+        candidates.push({
+          form, group, verb, example, fsrsKey, card, showExample,
+          due: card.state !== NEW && isDue(card),
+          ret: card.state === NEW ? 0 : retrievability(card),
+        });
+      }
+    }
+  }
+  saveFSRSState(fsrsState);
+
+  // Sort: due first, then lowest retrievability, then new
+  candidates.sort((a, b) => {
+    if (a.due && !b.due) return -1;
+    if (!a.due && b.due) return 1;
+    return a.ret - b.ret;
+  });
+
+  // Take up to 10 items
+  const session = candidates.slice(0, 10);
+
+  for (const c of session) {
+    drills.push({
+      type: 'conjugation_drill',
+      dictionary: c.verb.dictionary,
+      targetForm: c.form.name,
+      targetFormId: c.form.id,
+      correct_kana: c.verb.form,
+      english: c.verb.english,
+      rule: c.group.rule,
+      pattern: c.group.pattern,
+      explanation: `${c.verb.dictionary} → ${c.verb.form} (${c.group.rule})`,
+      exampleFrom: c.showExample ? c.example.dictionary : null,
+      exampleTo: c.showExample ? c.example.form : null,
+      _conjKey: c.fsrsKey,
+    });
+  }
+
+  // Shuffle
+  for (let i = drills.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [drills[i], drills[j]] = [drills[j], drills[i]];
+  }
+
+  return drills;
 }
 
 /**
@@ -6089,8 +6290,8 @@ function goToNextExercise() {
 
     if (currentMode === 'learn' || currentMode === 'learn-katakana') {
       reinforcement = makeLearningReinforcement(wrongEx);
-    } else if (currentMode === 'anchor') {
-      // Re-insert the same exercise for anchor words
+    } else if (currentMode === 'production') {
+      // Re-insert the same exercise for production drills
       reinforcement = { ...wrongEx };
     } else {
       const history = loadSkillHistory();
