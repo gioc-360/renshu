@@ -2661,6 +2661,7 @@ function makeConjugationDrill(currentLessonId) {
     rule: group.rule,
     pattern: group.pattern,
     explanation: `${verb.dictionary} → ${verb.form} (${group.rule})`,
+    formHint: form.hint,
     exampleFrom: showExample ? example.dictionary : null,
     exampleTo: showExample ? example.form : null,
     _conjKey: fsrsKey,
@@ -3877,15 +3878,11 @@ function updateProductionTabs() {
   tabs.forEach(t => t.classList.toggle('active', t.dataset.sub === productionSub));
 
   if (productionSub === 'anchor') {
-    if (desc) desc.textContent = '25 words that keep you in any conversation';
+    if (desc) { desc.textContent = '25 words that keep you in any conversation'; desc.classList.remove('hidden'); }
     if (conjSelect) conjSelect.classList.add('hidden');
   } else {
     const forms = Object.values(conjugationDrills);
-    const selectedForm = forms[conjStartFrom];
-    const formNames = forms.slice(0, conjStartFrom + 1).map(f => f.name);
-    if (desc) desc.textContent = formNames.length === 1
-      ? formNames[0]
-      : formNames.slice(0, -1).join(', ') + ' + ' + formNames[formNames.length - 1];
+    if (desc) desc.classList.add('hidden');
 
     if (conjSelect) {
       conjSelect.classList.remove('hidden');
@@ -4163,6 +4160,7 @@ function generateConjugationSession() {
       rule: c.group.rule,
       pattern: c.group.pattern,
       explanation: `${c.verb.dictionary} → ${c.verb.form} (${c.group.rule})`,
+      formHint: c.form.hint,
       exampleFrom: c.showExample ? c.example.dictionary : null,
       exampleTo: c.showExample ? c.example.form : null,
       _conjKey: c.fsrsKey,
@@ -6121,9 +6119,14 @@ function setupProductionExercise(ex) {
       reinforceQueue.push(ex);
     }
 
-    // Show correct answer for production exercises
+    // Show explanation for production exercises
     let revealHtml = '';
-    if (!isCorrect) {
+    if (isCorrect && ex.type === 'conjugation_drill') {
+      revealHtml = `<div class="correct-answer-reveal" style="opacity:0.7;">
+        <p style="font-size:0.85rem; color:var(--color-text-secondary);">${escHtml(ex.english)} → ${escHtml(ex.formHint || ex.targetForm)}</p>
+        <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:0.15rem;">${escHtml(ex.dictionary)} → ${escHtml(ex.correct_kana)} <span style="opacity:0.7">(${escHtml(ex.rule)})</span></p>
+      </div>`;
+    } else if (!isCorrect) {
       if (ex.type === 'vocab_recall') {
         const detailLine = ex.correct_romaji
           ? `<p style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.correct_kana)} (${escHtml(ex.correct_romaji)})</p>`
@@ -6142,7 +6145,8 @@ function setupProductionExercise(ex) {
         revealHtml = `<div class="correct-answer-reveal">
           <p class="answer-label">correct answer</p>
           <p class="answer-text">${escHtml(ex.correct_kana)}</p>
-          <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.dictionary)} → ${escHtml(ex.correct_kana)} <span style="opacity:0.7">(${escHtml(ex.rule)})</span></p>
+          <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-top:0.25rem;">${escHtml(ex.english)} → ${escHtml(ex.formHint || ex.targetForm)}</p>
+          <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:0.15rem;">${escHtml(ex.dictionary)} → ${escHtml(ex.correct_kana)} <span style="opacity:0.7">(${escHtml(ex.rule)})</span></p>
         </div>`;
       } else if (ex.type === 'reading_recall') {
         revealHtml = `<div class="correct-answer-reveal">
