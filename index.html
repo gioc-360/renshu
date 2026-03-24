@@ -2006,6 +2006,7 @@
             <button class="production-tab" data-sub="conjugation">Conjugation</button>
           </div>
           <div class="scenario-setting" id="production-description">25 words that keep you in any conversation</div>
+          <select class="start-select hidden" id="conjugation-level-select"></select>
         </div>
       </div>
       <div class="start-actions" id="start-actions">
@@ -2993,6 +2994,7 @@ let sessionResults = [];  // array of { type, correct } for each answered exerci
 let reinforceQueue = [];  // wrong items to reinforce later in session
 let currentMode = 'action'; // 'action', 'learn', 'learn-katakana', or 'production'
 let productionSub = 'anchor'; // 'anchor' or 'conjugation'
+let conjStartFrom = 0; // index into conjugationDrills form list — cumulative "start from"
 let drillFromScene = false; // true when drill was launched from scene results
 let kanaContinueSession = false; // true after first kana session — skips intro, FSRS-prioritized
 
@@ -3630,14 +3632,8 @@ function renderAnchorProgression(section) {
 
 function renderConjugationProgression(section) {
   const fsrsState = loadFSRSState();
-  const history = loadSkillHistory();
-  const lessonIdx = history.currentLesson || 0;
-  const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
-  const lessonNum = parseInt(lessonId.replace('L', ''));
-
-  const availableForms = Object.values(conjugationDrills).filter(f => {
-    return parseInt(f.lesson.replace('L', '')) <= lessonNum;
-  });
+  const allForms = Object.values(conjugationDrills);
+  const availableForms = allForms.slice(0, conjStartFrom + 1);
 
   let totalVerbs = 0;
   let learned = 0;
@@ -3811,12 +3807,8 @@ function renderLessonPulse() {
     el.innerHTML = html;
   } else if (currentMode === 'production' && productionSub === 'conjugation') {
     const history = loadSkillHistory();
-    const lessonIdx = history.currentLesson || 0;
-    const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
-    const lessonNum = parseInt(lessonId.replace('L', ''));
-    const availableForms = Object.values(conjugationDrills).filter(f =>
-      parseInt(f.lesson.replace('L', '')) <= lessonNum
-    );
+    const allForms = Object.values(conjugationDrills);
+    const availableForms = allForms.slice(0, conjStartFrom + 1);
     let html = '';
     for (const form of availableForms) {
       for (const group of form.groups) {
@@ -3881,11 +3873,37 @@ function updateModeUI() {
 function updateProductionTabs() {
   const tabs = document.querySelectorAll('.production-tab');
   const desc = document.getElementById('production-description');
+  const conjSelect = document.getElementById('conjugation-level-select');
   tabs.forEach(t => t.classList.toggle('active', t.dataset.sub === productionSub));
-  if (desc) {
-    desc.textContent = productionSub === 'anchor'
-      ? '25 words that keep you in any conversation'
-      : 'type the conjugated form from memory';
+
+  if (productionSub === 'anchor') {
+    if (desc) desc.textContent = '25 words that keep you in any conversation';
+    if (conjSelect) conjSelect.classList.add('hidden');
+  } else {
+    const forms = Object.values(conjugationDrills);
+    const selectedForm = forms[conjStartFrom];
+    const formNames = forms.slice(0, conjStartFrom + 1).map(f => f.name);
+    if (desc) desc.textContent = formNames.length === 1
+      ? formNames[0]
+      : formNames.slice(0, -1).join(', ') + ' + ' + formNames[formNames.length - 1];
+
+    if (conjSelect) {
+      conjSelect.classList.remove('hidden');
+      conjSelect.innerHTML = '';
+      forms.forEach((f, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i === 0 ? f.name : `through ${f.name}`;
+        if (i === conjStartFrom) opt.selected = true;
+        conjSelect.appendChild(opt);
+      });
+      conjSelect.onchange = function() {
+        conjStartFrom = parseInt(this.value, 10);
+        updateProductionTabs();
+        renderProgressionSection();
+        renderLessonPulse();
+      };
+    }
   }
 }
 
@@ -4093,14 +4111,9 @@ function generateAnchorDrill() {
 }
 
 function generateConjugationSession() {
-  const history = loadSkillHistory();
-  const lessonIdx = history.currentLesson || 0;
-  const lessonId = n5Content.lessons[lessonIdx] ? n5Content.lessons[lessonIdx].id : 'L1';
-  const lessonNum = parseInt(lessonId.replace('L', ''));
-
-  const availableForms = Object.values(conjugationDrills).filter(f => {
-    return parseInt(f.lesson.replace('L', '')) <= lessonNum;
-  });
+  // Cumulative: all forms from ます up to the selected "start from" form
+  const allForms = Object.values(conjugationDrills);
+  const availableForms = allForms.slice(0, conjStartFrom + 1);
   if (availableForms.length === 0) return [];
 
   const fsrsState = loadFSRSState();
