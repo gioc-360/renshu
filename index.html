@@ -2146,6 +2146,7 @@ import hiraganaGroups, { confusablePairs } from './src/data/hiragana-groups.js';
 import katakanaGroups, { katakanaConfusablePairs } from './src/data/katakana-groups.js';
 import scenarios from './src/data/scenarios.js';
 import anchorWords from './src/data/anchor-words.js';
+import conjugationDrills from './src/data/conjugation-drills.js';
 import hiraganaStrokes from './src/data/hiragana-strokes.js';
 import hiraganaOrigins from './src/data/hiragana-origins.js';
 import {
@@ -2153,6 +2154,27 @@ import {
   sortByUrgency, getDueCards, getNewCards,
   AGAIN, HARD, GOOD, EASY, NEW, REVIEW
 } from './src/fsrs.js';
+
+// ══════════════════════════════════════════════════════
+// Static Audio — pre-recorded TTS manifest
+// ══════════════════════════════════════════════════════
+let audioManifest = null;
+
+fetch('./audio/manifest.json')
+  .then(r => r.ok ? r.json() : null)
+  .then(m => { audioManifest = m; })
+  .catch(() => { /* manifest not available, all TTS falls back to API/browser */ });
+
+function playStaticAudio(text) {
+  if (!audioManifest || !audioManifest[text]) return null;
+  const filename = audioManifest[text];
+  const audio = new Audio(`./audio/${filename}`);
+  return new Promise((resolve, reject) => {
+    audio.onended = resolve;
+    audio.onerror = reject;
+    audio.play().catch(reject);
+  });
+}
 
 // ══════════════════════════════════════════════════════
 // Romaji ↔ Kana Conversion (for production exercise input)
@@ -2574,6 +2596,53 @@ function makeVocabRecall(allVocab, vocabKey, currentLessonVocab) {
 }
 
 /**
+ * Conjugation Drill: See dictionary form + target form name → type the conjugation.
+ * Scaffolded: first few encounters show a worked example from the same pattern group.
+ */
+function makeConjugationDrill(currentLessonId) {
+  // Find forms available for this lesson
+  const lessonNum = parseInt(currentLessonId.replace('L', ''));
+  const availableForms = Object.values(conjugationDrills).filter(f => {
+    const formLesson = parseInt(f.lesson.replace('L', ''));
+    return formLesson <= lessonNum;
+  });
+  if (availableForms.length === 0) return null;
+
+  const form = pickOne(availableForms);
+  const group = pickOne(form.groups);
+  if (!group.verbs || group.verbs.length === 0) return null;
+
+  // Pick a verb to drill (not the first one — that's the example)
+  const verbPool = group.verbs.length > 1 ? group.verbs.slice(1) : group.verbs;
+  const verb = pickOne(verbPool);
+
+  // The first verb in the group is the scaffolding example
+  const example = group.verbs[0];
+
+  // Check FSRS to decide whether to show scaffolding
+  const fsrsKey = `conj_${form.id}_${verb.dictionary}`;
+  const fsrsState = loadFSRSState();
+  const card = fsrsState[fsrsKey];
+  // Show example if new or fewer than 3 correct reviews
+  const showExample = !card || card.state === NEW || (card.reps || 0) < 3;
+
+  return {
+    type: 'conjugation_drill',
+    dictionary: verb.dictionary,
+    targetForm: form.name,
+    targetFormId: form.id,
+    correct_kana: verb.form,
+    english: verb.english,
+    rule: group.rule,
+    pattern: group.pattern,
+    explanation: `${verb.dictionary} → ${verb.form} (${group.rule})`,
+    exampleFrom: showExample ? example.dictionary : null,
+    exampleTo: showExample ? example.form : null,
+    _conjKey: fsrsKey,
+  };
+}
+
+/**
  * Particle Recall: Sentence with blank → type the correct particle.
  * No options shown. Production from memory.
  */
@@ -2752,7 +2821,19 @@ function generateExercises(content, count = 13) {
       if (usedGrammarKeys.has(key)) continue;
       usedGrammarKeys.add(key);
       exercises.push(makeParticleRecall(allGrammarFills, key, lessonGrammarFills));
-    } else if (rand < 0.55 && allSentences.length > 0) {
+    } else if (rand < 0.50 && currentLesson && currentLesson.id) {
+      // Conjugation drill — verb form production
+      const conj = makeConjugationDrill(currentLesson.id);
+      if (conj) {
+        // Ensure FSRS card exists
+        const cfs = loadFSRSState();
+        if (!cfs[conj._conjKey]) {
+          cfs[conj._conjKey] = createCard();
+          saveFSRSState(cfs);
+        }
+        exercises.push(conj);
+      }
+    } else if (rand < 0.60 && allSentences.length > 0) {
       // Reading recall (production) — type English meaning
       const available = allSentences.filter((s, idx) => !usedSentences.has(idx));
       if (available.length === 0) continue;
@@ -2762,15 +2843,15 @@ function generateExercises(content, count = 13) {
         if (idx >= 0) usedSentences.add(idx);
         exercises.push(rr);
       }
-    } else if (rand < 0.65 && allVocab.length > 0) {
+    } else if (rand < 0.75 && allVocab.length > 0) {
       // Listening (recognition with audio)
       const vocabKey = vocabReviewIdx < dueVocabKeys.length
         ? dueVocabKeys[vocabReviewIdx++].key : null;
       exercises.push(makeListening(allVocab, vocabKey, lessonVocab));
-    } else if (rand < 0.75 && allVocab.length > 0) {
+    } else if (rand < 0.80 && allVocab.length > 0) {
       // Pronunciation (production — speak aloud)
       exercises.push(makePronunciation(allVocab, allSentences, null));
-    } else if (rand < 0.85 && lessonSentenceBuilds.length > 0) {
+    } else if (rand < 0.90 && lessonSentenceBuilds.length > 0) {
       // Sentence build (production — arrange words)
       const sb = makeSentenceBuild(allSentenceBuilds, lessonSentenceBuilds);
       if (sb) exercises.push(sb);
@@ -2825,6 +2906,7 @@ function smartInterleave(exercises) {
 
 /** Extract a word identity string from an exercise for dedup comparison */
 function getExerciseWord(ex) {
+  if (ex._conjKey) return ex._conjKey;
   if (ex._word) return ex._word.kana || ex._word.romaji;
   if (ex._globalKey) return ex._globalKey;
   if (ex.japanese) return ex.japanese;
@@ -4387,6 +4469,9 @@ function renderExerciseContent(ex) {
     case 'reading_recall':
       html += renderReadingRecall(ex);
       break;
+    case 'conjugation_drill':
+      html += renderConjugationDrill(ex);
+      break;
     case 'char_intro':
       html += renderCharIntro(ex);
       break;
@@ -4455,7 +4540,7 @@ function renderExerciseContent(ex) {
     setTimeout(() => speakJapanese(ex.japanese || ex.question), 400);
   } else if (type === 'pronunciation') {
     setupPronunciation(ex);
-  } else if (type === 'vocab_recall' || type === 'particle_recall' || type === 'reading_recall') {
+  } else if (type === 'vocab_recall' || type === 'particle_recall' || type === 'reading_recall' || type === 'conjugation_drill') {
     setupProductionExercise(ex);
   } else if (type === 'hiragana_produce') {
     setupHiraganaProduce(ex);
@@ -5612,6 +5697,32 @@ if (typeof speechSynthesis !== 'undefined') {
 }
 
 function speakJapanese(text) {
+  const playBtn = exerciseCard.querySelector('#btn-play-audio');
+  const replayBtn = exerciseCard.querySelector('#btn-replay');
+
+  // Try static pre-recorded audio first
+  const staticResult = playStaticAudio(text);
+  if (staticResult) {
+    if (playBtn) playBtn.classList.add('speaking');
+    staticResult
+      .then(() => {
+        if (playBtn) playBtn.classList.remove('speaking');
+        if (replayBtn) replayBtn.classList.remove('hidden');
+      })
+      .catch(() => {
+        if (playBtn) playBtn.classList.remove('speaking');
+        if (replayBtn) replayBtn.classList.remove('hidden');
+        // Static audio failed, fall back to browser TTS
+        speakJapaneseBrowser(text);
+      });
+    return;
+  }
+
+  // Fall back to browser Web Speech API
+  speakJapaneseBrowser(text);
+}
+
+function speakJapaneseBrowser(text) {
   if (typeof speechSynthesis === 'undefined') return;
   speechSynthesis.cancel();
 
@@ -5688,6 +5799,30 @@ function renderReadingRecall(ex) {
   `;
 }
 
+function renderConjugationDrill(ex) {
+  const exampleHtml = ex.exampleFrom
+    ? `<div class="conj-example" style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:1rem; padding:0.5rem; border:1px solid var(--color-border);">
+        <span style="font-family:var(--font-jp);">${escHtml(ex.exampleFrom)}</span>
+        <span style="margin:0 0.5rem;">→</span>
+        <span style="font-family:var(--font-jp); color:var(--color-text);">${escHtml(ex.exampleTo)}</span>
+        <span style="font-size:0.75rem; margin-left:0.5rem; color:var(--color-text-muted);">(${escHtml(ex.rule)})</span>
+      </div>`
+    : '';
+  return `
+    <div class="exercise-prompt" style="text-align:center;">
+      ${exampleHtml}
+      <p class="instruction" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-text-muted);">${escHtml(ex.targetForm)}</p>
+      <p class="japanese-text" style="font-size:2rem; margin:0.5rem 0;">${escHtml(ex.dictionary)}</p>
+      <p style="font-size:0.85rem; color:var(--color-text-secondary);">${escHtml(ex.english)}</p>
+    </div>
+    <div class="production-input-group">
+      <input type="text" id="production-input" placeholder="kana or romaji..." autocomplete="off" autocapitalize="off" spellcheck="false" lang="ja" />
+      <button id="production-check">Check</button>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
 function setupProductionExercise(ex) {
   const input = exerciseCard.querySelector('#production-input');
   const checkBtn = exerciseCard.querySelector('#production-check');
@@ -5710,6 +5845,8 @@ function setupProductionExercise(ex) {
       // Accept kana or romaji for particles
       isCorrect = matchesAnswer(userAnswer, ex.correct_answer, null) ||
                   normalizeRomaji(userAnswer.toLowerCase()) === normalizeRomaji(ex.correct_answer);
+    } else if (ex.type === 'conjugation_drill') {
+      isCorrect = matchesAnswer(userAnswer, ex.correct_kana, null);
     } else if (ex.type === 'reading_recall') {
       // Fuzzy English match: lowercase, trim, ignore punctuation
       const normUser = userAnswer.toLowerCase().replace(/[^\w\s]/g, '').trim();
@@ -5743,11 +5880,13 @@ function setupProductionExercise(ex) {
     const rating = exerciseToRating(isCorrect, responseTime);
     const fsrsKey = ex._sceneKey
       ? ex._sceneKey
-      : ex._vocabIndex
-        ? `vocab_${ex._vocabIndex}`
-        : ex._grammarIndex
-          ? `grammar_${ex._grammarIndex}`
-          : null;
+      : ex._conjKey
+        ? ex._conjKey
+        : ex._vocabIndex
+          ? `vocab_${ex._vocabIndex}`
+          : ex._grammarIndex
+            ? `grammar_${ex._grammarIndex}`
+            : null;
     if (fsrsKey) {
       updateFSRSCard(fsrsKey, rating);
     }
@@ -5784,6 +5923,12 @@ function setupProductionExercise(ex) {
         revealHtml = `<div class="correct-answer-reveal">
           <p class="answer-label">correct answer</p>
           <p class="answer-text">${escHtml(ex.correct_answer)}</p>
+        </div>`;
+      } else if (ex.type === 'conjugation_drill') {
+        revealHtml = `<div class="correct-answer-reveal">
+          <p class="answer-label">correct answer</p>
+          <p class="answer-text">${escHtml(ex.correct_kana)}</p>
+          <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:0.25rem;">${escHtml(ex.dictionary)} → ${escHtml(ex.correct_kana)} <span style="opacity:0.7">(${escHtml(ex.rule)})</span></p>
         </div>`;
       } else if (ex.type === 'reading_recall') {
         revealHtml = `<div class="correct-answer-reveal">
@@ -6257,7 +6402,7 @@ async function evaluateWithAI(exchange, scenario, userInput, normalized) {
 // Voice I/O
 // ══════════════════════════════════════════════════════
 const AI_TTS_URL = 'https://renshu-iota.vercel.app/api/tts';
-const TTS_VOICE = 'fable';
+const TTS_VOICE = 'nova';
 let ttsAudioElement = null;
 
 async function playYukiLine(text) {
@@ -6265,6 +6410,14 @@ async function playYukiLine(text) {
   lineEl.classList.add('tts-playing');
 
   try {
+    // Try static pre-recorded audio first
+    const staticResult = playStaticAudio(text);
+    if (staticResult) {
+      await staticResult;
+      return;
+    }
+
+    // Fall back to TTS API
     const res = await fetch(AI_TTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -6284,7 +6437,7 @@ async function playYukiLine(text) {
 
     URL.revokeObjectURL(url);
   } catch (e) {
-    console.warn('TTS API failed, falling back to browser speech:', e);
+    console.warn('TTS failed, falling back to browser speech:', e);
     await browserTTSFallback(text);
   } finally {
     // Explicitly release audio element so iOS frees the audio session

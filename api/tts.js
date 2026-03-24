@@ -34,10 +34,10 @@ module.exports = async function handler(req, res) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'tts-1',
+        model: 'tts-1-hd',
         input: text,
-        voice: voice || 'fable',
-        speed: 0.85,
+        voice: voice || 'nova',
+        speed: 0.90,
         response_format: 'mp3',
       }),
     });
