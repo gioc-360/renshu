@@ -4167,13 +4167,31 @@ function generateConjugationSession() {
     });
   }
 
-  // Shuffle
+  // Build intro cards for each form present in the session
+  const formsInSession = new Set(session.map(c => c.form.id));
+  const intros = [];
+  for (const form of availableForms) {
+    if (!formsInSession.has(form.id)) continue;
+    intros.push({
+      type: 'conj_intro',
+      formName: form.name,
+      formHint: form.hint,
+      formId: form.id,
+      groups: form.groups.map(g => ({
+        pattern: g.pattern,
+        rule: g.rule,
+        example: g.verbs[0],
+      })),
+    });
+  }
+
+  // Shuffle drills, intros first (in form order)
   for (let i = drills.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [drills[i], drills[j]] = [drills[j], drills[i]];
   }
 
-  return drills;
+  return [...intros, ...drills];
 }
 
 /**
@@ -4643,6 +4661,7 @@ function renderExerciseContent(ex) {
     anchor_context: 'React',
     anchor_read: 'Read It',
     anchor_produce: 'Type It',
+    conj_intro: 'Conjugation Form',
   };
 
   let html = `<div class="exercise-type-badge">${typeLabels[type] || type}</div>`;
@@ -4680,6 +4699,9 @@ function renderExerciseContent(ex) {
       break;
     case 'reading_recall':
       html += renderReadingRecall(ex);
+      break;
+    case 'conj_intro':
+      html += renderConjIntro(ex);
       break;
     case 'conjugation_drill':
       html += renderConjugationDrill(ex);
@@ -4756,6 +4778,8 @@ function renderExerciseContent(ex) {
     setupProductionExercise(ex);
   } else if (type === 'hiragana_produce') {
     setupHiraganaProduce(ex);
+  } else if (type === 'conj_intro') {
+    setupConjIntro(ex);
   } else if (type === 'anchor_intro') {
     setupAnchorIntro(ex);
   } else if (type === 'anchor_context' || type === 'anchor_read' || type === 'anchor_produce') {
@@ -6011,6 +6035,42 @@ function renderReadingRecall(ex) {
   `;
 }
 
+function renderConjIntro(ex) {
+  let rulesHtml = '';
+  for (const g of ex.groups) {
+    rulesHtml += `
+      <div style="margin-bottom:0.75rem;">
+        <p style="font-size:0.75rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.25rem;">${escHtml(g.pattern)}</p>
+        <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:0.2rem;">${escHtml(g.rule)}</p>
+        <p style="font-family:var(--font-jp); font-size:1rem;">
+          <span style="color:var(--color-text-muted);">${escHtml(g.example.dictionary)}</span>
+          <span style="margin:0 0.4rem; color:var(--color-text-muted);">→</span>
+          <span style="color:var(--color-text);">${escHtml(g.example.form)}</span>
+          <span style="font-size:0.8rem; color:var(--color-text-muted); margin-left:0.4rem;">${escHtml(g.example.english)}</span>
+        </p>
+      </div>`;
+  }
+  return `
+    <div class="exercise-prompt" style="text-align:center;">
+      <p style="font-size:0.7rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.5rem;">Conjugation Form</p>
+      <p class="japanese-text" style="font-size:2rem; margin-bottom:0.25rem;">${escHtml(ex.formName)}</p>
+      <p style="font-size:1rem; color:var(--color-text-secondary); margin-bottom:1.25rem;">${escHtml(ex.formHint)}</p>
+      <div style="text-align:left; max-width:280px; margin:0 auto;">
+        ${rulesHtml}
+      </div>
+    </div>
+    <div id="explanation-slot"></div>
+  `;
+}
+
+function setupConjIntro(ex) {
+  answered = true;
+  btnAction.textContent = 'Next';
+  btnAction.classList.remove('btn-skip-state');
+  btnAction.classList.add('btn-next-state');
+  btnAction.disabled = false;
+}
+
 function renderConjugationDrill(ex) {
   const exampleHtml = ex.exampleFrom
     ? `<div class="conj-example" style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:1rem; padding:0.5rem; border:1px solid var(--color-border);">
@@ -6455,6 +6515,7 @@ function finishSession() {
     anchor_context: 'React',
     anchor_read: 'Read It',
     anchor_produce: 'Type It',
+    conj_intro: 'Conjugation Form',
   };
 
   const breakdownList = $('#breakdown-list');
